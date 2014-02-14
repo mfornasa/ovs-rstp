@@ -52,6 +52,9 @@ static const uint8_t eth_addr_broadcast[ETH_ADDR_LEN] OVS_UNUSED
 static const uint8_t eth_addr_stp[ETH_ADDR_LEN] OVS_UNUSED
     = { 0x01, 0x80, 0xC2, 0x00, 0x00, 0x00 };
 
+static const uint8_t eth_addr_rstp[ETH_ADDR_LEN] OVS_UNUSED
+    = { 0x01, 0x80, 0xC2, 0x00, 0x00, 0x00 };
+
 static const uint8_t eth_addr_lacp[ETH_ADDR_LEN] OVS_UNUSED
     = { 0x01, 0x80, 0xC2, 0x00, 0x00, 0x02 };
 

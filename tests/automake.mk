@@ -63,6 +63,7 @@ TESTSUITE_AT = \
 	tests/ovs-monitor-ipsec.at \
 	tests/ovs-xapi-sync.at \
 	tests/stp.at \
+    tests/rstp.at \
 	tests/interface-reconfigure.at \
 	tests/vlog.at \
 	tests/vtep-ctl.at
@@ -121,6 +122,7 @@ valgrind_wrappers = \
 	tests/valgrind/test-packets \
 	tests/valgrind/test-random \
 	tests/valgrind/test-reconnect \
+    tests/valgrind/test-rstp \
 	tests/valgrind/test-sha1 \
 	tests/valgrind/test-stp \
 	tests/valgrind/test-type-props \
@@ -258,6 +260,10 @@ tests_test_packets_LDADD = lib/libopenvswitch.la $(SSL_LIBS)
 noinst_PROGRAMS += tests/test-random
 tests_test_random_SOURCES = tests/test-random.c
 tests_test_random_LDADD = lib/libopenvswitch.la $(SSL_LIBS)
+
+noinst_PROGRAMS += tests/test-rstp
+tests_test_rstp_SOURCES = tests/test-rstp.c
+tests_test_rstp_LDADD = lib/libopenvswitch.la $(SSL_LIBS)
 
 noinst_PROGRAMS += tests/test-stp
 tests_test_stp_SOURCES = tests/test-stp.c

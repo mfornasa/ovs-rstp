@@ -1078,8 +1078,8 @@ handle_upcalls(struct handler *handler, struct list *upcalls)
      * case each packet of a miss can share the same actions, but slow-pathed
      * packets need to be translated individually:
      *
-     *   - For SLOW_CFM, SLOW_LACP, SLOW_STP, and SLOW_BFD, translation is what
-     *     processes received packets for these protocols.
+     *   - For SLOW_CFM, SLOW_LACP, SLOW_STP, SLOW_RSTP and SLOW_BFD, 
+     *     translation is what processes received packets for these protocols.
      *
      *   - For SLOW_CONTROLLER, translation sends the packet to the OpenFlow
      *     controller.

@@ -202,6 +202,7 @@ static void bridge_configure_mac_table(struct bridge *);
 static void bridge_configure_sflow(struct bridge *, int *sflow_bridge_number);
 static void bridge_configure_ipfix(struct bridge *);
 static void bridge_configure_stp(struct bridge *);
+static void bridge_configure_rstp(struct bridge *);
 static void bridge_configure_tables(struct bridge *);
 static void bridge_configure_dp_desc(struct bridge *);
 static void bridge_configure_remotes(struct bridge *,
@@ -350,9 +351,14 @@ bridge_init(const char *remote)
 
     ovsdb_idl_omit_alert(idl, &ovsrec_bridge_col_datapath_id);
     ovsdb_idl_omit_alert(idl, &ovsrec_bridge_col_status);
+    ovsdb_idl_omit_alert(idl, &ovsrec_bridge_col_rstp_status);
+    ovsdb_idl_omit_alert(idl, &ovsrec_bridge_col_stp_enable);
+    ovsdb_idl_omit_alert(idl, &ovsrec_bridge_col_rstp_enable);   
     ovsdb_idl_omit(idl, &ovsrec_bridge_col_external_ids);
 
     ovsdb_idl_omit_alert(idl, &ovsrec_port_col_status);
+    ovsdb_idl_omit_alert(idl, &ovsrec_port_col_rstp_status);
+    ovsdb_idl_omit_alert(idl, &ovsrec_port_col_rstp_statistics);
     ovsdb_idl_omit_alert(idl, &ovsrec_port_col_statistics);
     ovsdb_idl_omit(idl, &ovsrec_port_col_external_ids);
 
@@ -413,6 +419,7 @@ bridge_init(const char *remote)
     bond_init();
     cfm_init();
     stp_init();
+    rstp_init();
 }
 
 void
@@ -591,6 +598,7 @@ bridge_reconfigure(const struct ovsrec_open_vswitch *ovs_cfg)
         bridge_configure_sflow(br, &sflow_bridge_number);
         bridge_configure_ipfix(br);
         bridge_configure_stp(br);
+        bridge_configure_rstp(br);
         bridge_configure_tables(br);
         bridge_configure_dp_desc(br);
 
@@ -1240,12 +1248,126 @@ port_configure_stp(const struct ofproto *ofproto, struct port *port,
     }
 }
 
+static void
+port_configure_rstp(const struct ofproto *ofproto, struct port *port,
+        struct ofproto_port_rstp_settings *port_s,
+        int *port_num_counter, unsigned long *port_num_bitmap)
+{
+    const char *config_str;
+    struct iface *iface;
+    int temp_num, done;
+
+    if (!smap_get_bool(&port->cfg->other_config, "rstp-enable", true)) {
+        port_s->enable = false;
+        return;
+    } else {
+        port_s->enable = true;
+    }
+
+    /* RSTP over bonds is not supported. */
+    if (!list_is_singleton(&port->ifaces)) {
+        VLOG_ERR("port %s: cannot enable RSTP on bonds, disabling",
+                port->name);
+        port_s->enable = false;
+        return;
+    }
+
+    iface = CONTAINER_OF(list_front(&port->ifaces), struct iface, port_elem);
+
+    /* Internal ports shouldn't participate in spanning tree, so
+     * skip them. */
+    if (!strcmp(iface->type, "internal")) {
+        VLOG_DBG("port %s: disable RSTP on internal ports", port->name);
+        port_s->enable = false;
+        return;
+    }
+
+    /* RSTP on mirror output ports is not supported. */
+    if (ofproto_is_mirror_output_bundle(ofproto, port)) {
+        VLOG_DBG("port %s: disable RSTP on mirror ports", port->name);
+        port_s->enable = false;
+        return;
+    }
+    
+    config_str = smap_get(&port->cfg->other_config, "rstp-port-num");
+    if (config_str) {
+        unsigned long int port_num = strtoul(config_str, NULL, 0);
+        if (port_num < 1 || port_num > RSTP_MAX_PORTS) {
+            VLOG_ERR("port %s: invalid rstp-port-num", port->name);
+            port_s->enable = false;
+            return;
+        }
+        if (bitmap_is_set(port_num_bitmap, port_num)) {
+            VLOG_ERR("port %s: duplicate rstp-port-num %lu, disabling",
+                    port->name, port_num);
+            port_s->enable = false;
+            return;
+        }
+        bitmap_set1(port_num_bitmap, port_num);
+        port_s->port_num = port_num;
+    }
+    else {
+        if (*port_num_counter >= RSTP_MAX_PORTS) {
+            VLOG_ERR("port %s: too many RSTP ports, disabling", port->name);
+            port_s->enable = false;
+            return;
+        }
+        /* If rstp-port-num is not specified, look for the first free one. */
+        done = 0;
+        for (temp_num = 1; temp_num <= RSTP_MAX_PORTS; temp_num++) {
+            if (!bitmap_is_set(port_num_bitmap, temp_num) && !done) {
+                bitmap_set1(port_num_bitmap, temp_num);
+                port_s->port_num = temp_num;
+                done = 1;
+            }
+        }
+        if (done == 0) {
+            VLOG_ERR("port %s: no rstp-port-num available", port->name);
+            port_s->enable = false;
+            return;
+        }
+    }
+
+    config_str = smap_get(&port->cfg->other_config, "rstp-path-cost");
+    if (config_str) {
+        port_s->path_cost = strtoul(config_str, NULL, 10);
+    } else {
+        enum netdev_features current;
+        unsigned int mbps;
+
+        netdev_get_features(iface->netdev, &current, NULL, NULL, NULL);
+        mbps = netdev_features_to_bps(current, 100 * 1000 * 1000) / 1000000;
+        port_s->path_cost = rstp_convert_speed_to_cost(mbps);
+    }
+
+    config_str = smap_get(&port->cfg->other_config, "rstp-port-priority");
+    if (config_str) {
+        port_s->priority = strtoul(config_str, NULL, 0);
+    } else {
+        port_s->priority = RSTP_DEFAULT_PORT_PRIORITY;
+    }
+
+    port_s->admin_edge_port = smap_get_bool(&port->cfg->other_config, 
+                                            "rstp-port-admin-edge", false);
+    port_s->auto_edge = smap_get_bool(&port->cfg->other_config, 
+                                      "rstp-port-auto-edge", true);
+    port_s->mcheck = smap_get_bool(&port->cfg->other_config, 
+                                   "rstp-port-mcheck", false);
+}
+
 /* Set spanning tree configuration on 'br'. */
 static void
 bridge_configure_stp(struct bridge *br)
 {
+    struct ofproto_rstp_status rstp_status;
+    ofproto_get_rstp_status(br->ofproto, &rstp_status);
     if (!br->cfg->stp_enable) {
         ofproto_set_stp(br->ofproto, NULL);
+    } else if (rstp_status.enabled) {
+        /* Do not activate STP if RSTP is enabled. */
+        VLOG_ERR("STP cannot be enabled if RSTP is running.");
+        ofproto_set_stp(br->ofproto, NULL);
+        ovsrec_bridge_set_stp_enable(br->cfg, false);
     } else {
         struct ofproto_stp_settings br_s;
         const char *config_str;
@@ -1332,6 +1454,114 @@ bridge_configure_stp(struct bridge *br)
             ofproto_set_stp(br->ofproto, NULL);
         }
         bitmap_free(port_num_bitmap);
+    }
+}
+
+static void
+bridge_configure_rstp(struct bridge *br)
+{
+    struct ofproto_stp_status stp_status;
+    ofproto_get_stp_status(br->ofproto, &stp_status);
+    if (!br->cfg->rstp_enable) {
+        ofproto_set_rstp(br->ofproto, NULL);
+    } else if (stp_status.enabled) {
+        /* Do not activate RSTP if STP is enabled. */
+        VLOG_ERR("RSTP cannot be enabled if STP is running.");
+        ofproto_set_rstp(br->ofproto, NULL);
+        ovsrec_bridge_set_rstp_enable(br->cfg, false);
+    } else {
+        struct ofproto_rstp_settings br_s;
+        const char *config_str;
+        struct port *port;
+        int port_num_counter;
+        unsigned long *port_num_bitmap;
+
+        config_str = smap_get(&br->cfg->other_config, "rstp-address");
+        if (config_str) {
+            uint8_t ea[ETH_ADDR_LEN];
+
+            if (eth_addr_from_string(config_str, ea)) {
+                memcpy(&br_s.address, &ea, ETH_ADDR_LEN);
+            }
+            else {
+                memcpy(&br_s.address, br->ea, ETH_ADDR_LEN);
+                VLOG_ERR("bridge %s: invalid rstp-address, defaulting "
+                        "to "ETH_ADDR_FMT, br->name, ETH_ADDR_ARGS(br->ea));
+            }
+        }
+        else {
+            memcpy(&br_s.address, br->ea, ETH_ADDR_LEN);
+        }
+
+        config_str = smap_get(&br->cfg->other_config, "rstp-priority");
+        if (config_str) {
+            br_s.priority = strtoul(config_str, NULL, 0);
+        } else {
+            br_s.priority = RSTP_DEFAULT_PRIORITY;
+        }
+
+        config_str = smap_get(&br->cfg->other_config, "rstp-ageing-time");
+        if (config_str) {
+            br_s.ageing_time = strtoul(config_str, NULL, 0);
+        } else {
+            br_s.ageing_time = RSTP_DEFAULT_AGEING_TIME;
+        }
+
+        config_str = smap_get(&br->cfg->other_config, 
+                              "rstp-force-protocol-version");
+        if (config_str) {
+            br_s.force_protocol_version = strtoul(config_str, NULL, 0);
+        } else {
+            br_s.force_protocol_version = FPV_DEFAULT;
+        }
+
+        config_str = smap_get(&br->cfg->other_config, "rstp-max-age");
+        if (config_str) {
+            br_s.bridge_max_age = strtoul(config_str, NULL, 10);
+        } else {
+            br_s.bridge_max_age = RSTP_DEFAULT_BRIDGE_MAX_AGE;
+        }
+
+        config_str = smap_get(&br->cfg->other_config, "rstp-forward-delay");
+        if (config_str) {
+            br_s.bridge_forward_delay = strtoul(config_str, NULL, 10);
+        } else {
+            br_s.bridge_forward_delay = RSTP_DEFAULT_BRIDGE_FORWARD_DELAY;
+        }
+
+        config_str = smap_get(&br->cfg->other_config, 
+                              "rstp-transmit-hold-count");
+        if (config_str) {
+            br_s.transmit_hold_count = strtoul(config_str, NULL, 10);
+        } else {
+            br_s.transmit_hold_count = RSTP_DEFAULT_TRANSMIT_HOLD_COUNT;
+        }
+
+        /* Configure RSTP on the bridge. */
+        if (ofproto_set_rstp(br->ofproto, &br_s)) {
+            VLOG_ERR("bridge %s: could not enable RSTP", br->name);
+            return;
+        }
+
+        port_num_counter = 0;
+        port_num_bitmap = bitmap_allocate(RSTP_MAX_PORTS);
+        HMAP_FOR_EACH (port, hmap_node, &br->ports) {
+            struct ofproto_port_rstp_settings port_s;
+            struct iface *iface;
+
+            port_configure_rstp(br->ofproto, port, &port_s,
+                    &port_num_counter, port_num_bitmap);
+
+            /* As bonds are not supported, just apply configuration to
+             * all interfaces. */
+            LIST_FOR_EACH (iface, port_elem, &port->ifaces) {
+                if (ofproto_port_set_rstp(br->ofproto, iface->ofp_port,
+                            &port_s)) {
+                    VLOG_ERR("port %s: could not enable RSTP", port->name);
+                    continue;
+                }
+            }
+        }
     }
 }
 
@@ -2020,6 +2250,98 @@ port_refresh_stp_stats(struct port *port)
                                ARRAY_SIZE(int_values));
 }
 
+static void
+br_refresh_rstp_status(struct bridge *br)
+{
+    char *temp;
+    struct smap smap = SMAP_INITIALIZER(&smap);
+    struct ofproto *ofproto = br->ofproto;
+    struct ofproto_rstp_status status;
+
+    if (ofproto_get_rstp_status(ofproto, &status)) {
+        return;
+    }
+    if (!status.enabled) {
+        ovsrec_bridge_set_rstp_status(br->cfg, NULL);
+        return;
+    }
+    temp = get_id_string_from_uint8_t(status.bridge_id, 8);
+    smap_add_format(&smap, "rstp_bridge_id", "%s", temp);
+    
+    temp = get_id_string_from_uint8_t(status.root_path_cost, 4);
+    smap_add_format(&smap, "rstp_root_path_cost", "%s", temp);
+
+    temp = get_id_string_from_uint8_t(status.root_id, 8);
+    smap_add_format(&smap, "rstp_root_id", "%s", temp);
+
+    temp = get_id_string_from_uint8_t(status.designated_id, 8);
+    smap_add_format(&smap, "rstp_designated_id", "%s", temp);
+    
+    temp = get_id_string_from_uint8_t(status.designated_port_id, 2);
+    smap_add_format(&smap, "rstp_designated_port_id", "%s", temp);
+    
+    temp = get_id_string_from_uint8_t(status.bridge_port_id, 2);
+        smap_add_format(&smap, "rstp_bridge_port_id", "%s", temp);
+    
+    ovsrec_bridge_set_rstp_status(br->cfg, &smap);
+    smap_destroy(&smap);
+}
+
+static void
+port_refresh_rstp_status(struct port *port)
+{
+    struct ofproto *ofproto = port->bridge->ofproto;
+    struct iface *iface;
+    struct ofproto_port_rstp_status status;
+    char *keys[3];
+    int64_t int_values[3];
+    struct smap smap;
+    char *temp;
+
+    if (port_is_synthetic(port)) {
+        return;
+    }
+
+    /* RSTP doesn't currently support bonds. */
+    if (!list_is_singleton(&port->ifaces)) {
+        ovsrec_port_set_rstp_status(port->cfg, NULL);
+        return;
+    }
+
+    iface = CONTAINER_OF(list_front(&port->ifaces), struct iface, port_elem);
+    if (ofproto_port_get_rstp_status(ofproto, iface->ofp_port, &status)) {
+        return;
+    }
+
+    if (!status.enabled) {
+        ovsrec_port_set_rstp_status(port->cfg, NULL);
+        ovsrec_port_set_rstp_statistics(port->cfg, NULL, NULL, 0);
+        return;
+    }
+    /* Set Status column. */
+    smap_init(&smap);
+    
+    temp = get_id_string_from_uint8_t(status.port_id, 2);
+    smap_add_format(&smap, "rstp_port_id", "%s", temp);
+    temp =  rstp_port_role_name(status.role);
+    smap_add_format(&smap, "rstp_port_role", "%s", temp);
+    temp = rstp_state_name(status.state);
+    smap_add_format(&smap, "rstp_port_state", "%s", temp);
+    
+    ovsrec_port_set_rstp_status(port->cfg, &smap);
+    smap_destroy(&smap);
+
+    /* Set Statistics column. */
+    keys[0] = "rstp_tx_count";
+    int_values[0] = status.tx_count;
+    keys[1] = "rstp_rx_count";
+    int_values[1] = status.rx_count;
+    keys[2] = "rstp_uptime";
+    int_values[2] = status.uptime;
+    ovsrec_port_set_rstp_statistics(port->cfg, keys, int_values,
+            ARRAY_SIZE(int_values));
+}
+
 static bool
 enable_system_stats(const struct ovsrec_open_vswitch *cfg)
 {
@@ -2185,9 +2507,11 @@ instant_stats_run(void)
             struct port *port;
 
             br_refresh_stp_status(br);
+            br_refresh_rstp_status(br);
 
             HMAP_FOR_EACH (port, hmap_node, &br->ports) {
                 port_refresh_stp_status(port);
+                port_refresh_rstp_status(port);
             }
 
             HMAP_FOR_EACH (iface, name_node, &br->iface_by_name) {
