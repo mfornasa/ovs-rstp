@@ -80,6 +80,7 @@ struct xbridge {
     struct dpif_ipfix *ipfix;     /* Ipfix handle, or null. */
     struct netflow *netflow;      /* Netflow handle, or null. */
     struct stp *stp;              /* STP or null if disabled. */
+    struct rstp *rstp;            /* RSTP or null if disabled. */
 
     /* Special rules installed by ofproto-dpif. */
     struct rule_dpif *miss_rule;
@@ -143,6 +144,7 @@ struct xport {
     enum ofputil_port_config config; /* OpenFlow port configuration. */
     enum ofputil_port_state state;   /* OpenFlow port state. */
     int stp_port_no;                 /* STP port number or -1 if not in use. */
+    int rstp_port_no;                /* RSTP port number or -1 if not in use. */
 
     struct hmap skb_priorities;      /* Map of 'skb_priority_to_dscp's. */
 
@@ -408,6 +410,7 @@ xlate_xbridge_set(struct xbridge *xbridge,
                   struct rule_dpif *miss_rule,
                   struct rule_dpif *no_packet_in_rule,
                   const struct mac_learning *ml, struct stp *stp,
+                  struct rstp *rstp,
                   const struct mbridge *mbridge,
                   const struct dpif_sflow *sflow,
                   const struct dpif_ipfix *ipfix,
@@ -440,6 +443,11 @@ xlate_xbridge_set(struct xbridge *xbridge,
     if (xbridge->stp != stp) {
         stp_unref(xbridge->stp);
         xbridge->stp = stp_ref(stp);
+    }
+
+    if (xbridge->rstp != rstp) {
+        rstp_unref(xbridge->rstp);
+        xbridge->rstp = rstp_ref(rstp);
     }
 
     if (xbridge->netflow != netflow) {
@@ -731,6 +739,7 @@ xlate_xbridge_remove(struct xlate_cfg *xcfg, struct xbridge *xbridge)
     dpif_sflow_unref(xbridge->sflow);
     dpif_ipfix_unref(xbridge->ipfix);
     stp_unref(xbridge->stp);
+    rstp_unref(xbridge->rstp);
     hmap_destroy(&xbridge->xports);
     free(xbridge->name);
     free(xbridge);
@@ -812,7 +821,7 @@ xlate_ofport_set(struct ofproto_dpif *ofproto, struct ofbundle *ofbundle,
                  struct ofport_dpif *ofport, ofp_port_t ofp_port,
                  odp_port_t odp_port, const struct netdev *netdev,
                  const struct cfm *cfm, const struct bfd *bfd,
-                 struct ofport_dpif *peer, int stp_port_no,
+                 struct ofport_dpif *peer, int stp_port_no, int rstp_port_no,
                  const struct ofproto_port_queue *qdscp_list, size_t n_qdscp,
                  enum ofputil_port_config config,
                  enum ofputil_port_state state, bool is_tunnel,
@@ -835,8 +844,8 @@ xlate_ofport_set(struct ofproto_dpif *ofproto, struct ofbundle *ofbundle,
 
     ovs_assert(xport->ofp_port == ofp_port);
 
-    xlate_xport_set(xport, odp_port, netdev, cfm, bfd, stp_port_no, config,
-                    state, is_tunnel, may_enable);
+    xlate_xport_set(xport, odp_port, netdev, cfm, bfd, stp_port_no,
+                    rstp_port_no, config, state, is_tunnel, may_enable);
 
     if (xport->peer) {
         xport->peer->peer = NULL;
@@ -1114,6 +1123,60 @@ stp_process_packet(const struct xport *xport, const struct ofpbuf *packet)
 
     if (ofpbuf_try_pull(&payload, ETH_HEADER_LEN + LLC_HEADER_LEN)) {
         stp_received_bpdu(sp, ofpbuf_data(&payload), ofpbuf_size(&payload));
+    }
+}
+
+static struct rstp_port *
+xport_get_rstp_port(const struct xport *xport)
+{
+    return xport->xbridge->rstp && xport->rstp_port_no != -1
+        ? rstp_get_port(xport->xbridge->rstp, xport->rstp_port_no)
+        : NULL;
+}
+
+static enum rstp_state
+xport_rstp_learn_state(const struct xport *xport)
+{
+    struct rstp_port *rp = xport_get_rstp_port(xport);
+    return rstp_learn_in_state(rp ? rstp_port_get_state(rp) : RSTP_DISABLED);
+}
+
+static bool
+xport_rstp_forward_state(const struct xport *xport)
+{
+    struct rstp_port *rp = xport_get_rstp_port(xport);
+    return rstp_forward_in_state(rp ? rstp_port_get_state(rp) : RSTP_DISABLED);
+}
+
+/* Returns true if RSTP should process 'flow'.  Sets fields in 'wc' that
+ * were used to make the determination.*/
+static bool
+rstp_should_process_flow(const struct flow *flow, struct flow_wildcards *wc)
+{
+    memset(&wc->masks.dl_dst, 0xff, sizeof wc->masks.dl_dst);
+    return eth_addr_equals(flow->dl_dst, eth_addr_rstp);
+}
+
+static void
+rstp_process_packet(const struct xport *xport, const struct ofpbuf *packet)
+{
+    struct rstp_port *rp = xport_get_rstp_port(xport);
+    struct ofpbuf payload = *packet;
+    struct eth_header *eth = payload.data;
+
+    /* Sink packets on ports that have RSTP disabled when the bridge has
+     * RSTP enabled. */
+    if (!rp || rstp_port_get_state(rp) == RSTP_DISABLED) {
+        return;
+    }
+
+    /* Trim off padding on payload. */
+    if (payload.size > ntohs(eth->eth_type) + ETH_HEADER_LEN) {
+        payload.size = ntohs(eth->eth_type) + ETH_HEADER_LEN;
+    }
+
+    if (ofpbuf_try_pull(&payload, ETH_HEADER_LEN + LLC_HEADER_LEN)) {
+        rstp_received_bpdu(rp, payload.data, payload.size);
     }
 }
 
@@ -2117,6 +2180,11 @@ process_special(struct xlate_ctx *ctx, const struct flow *flow,
             stp_process_packet(xport, packet);
         }
         return SLOW_STP;
+    } else if (xbridge->rstp && rstp_should_process_flow(flow, wc)) {
+        if (packet) {
+            rstp_process_packet(xport, packet);
+        }
+        return SLOW_RSTP;
     } else {
         return 0;
     }
@@ -2124,7 +2192,7 @@ process_special(struct xlate_ctx *ctx, const struct flow *flow,
 
 static void
 compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
-                        bool check_stp)
+                        bool check_stp, bool check_rstp)
 {
     const struct xport *xport = get_ofp_port(ctx->xbridge, ofp_port);
     struct flow_wildcards *wc = &ctx->xout->wc;
@@ -2157,6 +2225,9 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
                          "skipping output");
             return;
         }
+    } else if (check_rstp && !xport_rstp_forward_state(xport)) {
+        xlate_report(ctx, "RSTP not int forwarding state, skipping output");
+        return;
     }
 
     if (mbridge_has_mirrors(ctx->xbridge->mbridge) && xport->xbundle) {
@@ -2182,9 +2253,11 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
         } else if (may_receive(peer, ctx)) {
             if (xport_stp_forward_state(peer)) {
                 xlate_table_action(ctx, flow->in_port.ofp_port, 0, true, true);
+            } else if (xport_rstp_forward_state(peer)) {
+                xlate_table_action(ctx, flow->in_port.ofp_port, 0, true, true);
             } else {
-                /* Forwarding is disabled by STP.  Let OFPP_NORMAL and the
-                 * learning action look at the packet, then drop it. */
+                /* Forwarding is disabled by STP and RSTP.  Let OFPP_NORMAL and
+                 * the learning action look at the packet, then drop it. */
                 struct flow old_base_flow = ctx->base_flow;
                 size_t old_size = ofpbuf_size(&ctx->xout->odp_actions);
                 mirror_mask_t old_mirrors = ctx->xout->mirrors;
@@ -2309,7 +2382,7 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
 static void
 compose_output_action(struct xlate_ctx *ctx, ofp_port_t ofp_port)
 {
-    compose_output_action__(ctx, ofp_port, true);
+    compose_output_action__(ctx, ofp_port, true, true);
 }
 
 static void
@@ -2626,7 +2699,7 @@ flood_packets(struct xlate_ctx *ctx, bool all)
         }
 
         if (all) {
-            compose_output_action__(ctx, xport->ofp_port, false);
+            compose_output_action__(ctx, xport->ofp_port, false, false);
         } else if (!(xport->config & OFPUTIL_PC_NO_FLOOD)) {
             compose_output_action(ctx, xport->ofp_port);
         }
@@ -3078,7 +3151,8 @@ may_receive(const struct xport *xport, struct xlate_ctx *ctx)
      * disabled.  If just learning is enabled, we need to have
      * OFPP_NORMAL and the learning action have a look at the packet
      * before we can drop it. */
-    if (!xport_stp_forward_state(xport) && !xport_stp_learn_state(xport)) {
+    if (!xport_stp_forward_state(xport) && !xport_stp_learn_state(xport)
+        && !xport_rstp_forward_state(xport) && !xport_rstp_learn_state(xport)) {
         return false;
     }
 
@@ -3705,6 +3779,9 @@ xlate_actions(struct xlate_in *xin, struct xlate_out *xout)
              * packet, so drop it now if forwarding is disabled. */
             if (in_port && !xport_stp_forward_state(in_port)) {
                 ofpbuf_set_size(&ctx.xout->odp_actions, sample_actions_len);
+            }
+            else if (in_port && !xport_rstp_forward_state(in_port)) {
+                ctx.xout->odp_actions.size = sample_actions_len;
             }
         }
 

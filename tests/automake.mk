@@ -65,6 +65,7 @@ TESTSUITE_AT = \
 	tests/ovs-monitor-ipsec.at \
 	tests/ovs-xapi-sync.at \
 	tests/stp.at \
+    tests/rstp.at \
 	tests/interface-reconfigure.at \
 	tests/vlog.at \
 	tests/vtep-ctl.at
@@ -124,6 +125,7 @@ valgrind_wrappers = \
 	tests/valgrind/test-packets \
 	tests/valgrind/test-random \
 	tests/valgrind/test-reconnect \
+    tests/valgrind/test-rstp \
 	tests/valgrind/test-sha1 \
 	tests/valgrind/test-stp \
 	tests/valgrind/test-type-props \
