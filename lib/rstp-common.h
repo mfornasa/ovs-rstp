@@ -814,7 +814,6 @@ struct rstp {
 	struct ovs_refcount ref_cnt;
 
     /* Interface to client. */
-    bool fdb_needs_flush;          /* MAC learning tables needs flushing. */
     struct rstp_port *first_changed_port;
     void (*send_bpdu)(struct ofpbuf *bpdu, int port_no, void *aux);
     void *aux;

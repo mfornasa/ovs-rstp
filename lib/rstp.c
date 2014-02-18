@@ -639,16 +639,24 @@ rstp_get_root_path_cost(const struct rstp *rstp)
 }
 
 /* Returns true if something has happened to 'rstp' which necessitates flushing
- * the client's MAC learning table.  Calling this function resets 'rstp' so that
- * future calls will return false until flushing is required again. */
+ * the client's MAC learning table.
+ */
 bool
 rstp_check_and_reset_fdb_flush(struct rstp *rstp)
 {
-    bool needs_flush;
-
+    bool needs_flush = false;
+    struct rstp_port *p, *end;
     ovs_mutex_lock(&mutex);
-    needs_flush = rstp->fdb_needs_flush;
-    rstp->fdb_needs_flush = false;
+    end = &rstp->ports[ARRAY_SIZE(rstp->ports)];
+    for (p = rstp->first_changed_port; p < end; p++) {
+        if(p->fdb_flush == true) {
+            needs_flush = true;
+            /* fdb_flush should be reset by the filtering database
+             * once the entries are removed if rstp_version is TRUE, and
+             * immediately if stp_version is TRUE.*/
+            p->fdb_flush = false;
+        }
+    }
     ovs_mutex_unlock(&mutex);
     return needs_flush;
 }

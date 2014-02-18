@@ -2083,8 +2083,10 @@ rstp_run(struct ofproto_dpif *ofproto)
                 update_rstp_port_state(ofport);
             }
         }
+        /* FIXME: This check should be done on-event (i.e., when setting p->fdb_flush) and not periodically. */
         if (rstp_check_and_reset_fdb_flush(ofproto->rstp)) {
             ovs_rwlock_wrlock(&ofproto->ml->rwlock);
+            /* FIXME: RSTP should be able to flush the entries pertaining to a single port, not the whole table. */
             mac_learning_flush(ofproto->ml);
             ovs_rwlock_unlock(&ofproto->ml->rwlock);
         }
