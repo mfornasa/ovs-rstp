@@ -1699,6 +1699,9 @@ port_destruct(struct ofport *port_)
     if (port->stp_port) {
         stp_port_disable(port->stp_port);
     }
+    if (port->rstp_port) {
+        rstp_port_disable(port->rstp_port);
+    }
     if (ofproto->sflow) {
         dpif_sflow_del_port(ofproto->sflow, port->odp_port);
     }
