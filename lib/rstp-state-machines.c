@@ -646,19 +646,9 @@ time_decode(uint8_t * encoded)
 void
 tx_config(struct rstp_port * p)
 {
-    char frame[200];
-    struct ethernet_hdr * eth;
-    struct rstp_bpdu * bpdu;
-    memset(frame,'0',sizeof(frame));
+    struct rstp_bpdu * bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
+    bzero(bpdu, sizeof(struct rstp_bpdu));
 
-    eth  = (struct ethernet_hdr *)frame;
-    memcpy(eth->dhost, eth_addr_rstp, ETH_ADDR_LEN);
-    memcpy(eth->shost, p->rstp->bridge_identifier+2, ETH_ADDR_LEN);
-    eth->length = htons(sizeof(struct rstp_bpdu) + LLC_SIZE);
-    eth->dsap = RSTP_LLC_DSAP;
-    eth->ssap = RSTP_LLC_SSAP;
-    eth->cntrl = RSTP_LLC_CNTL;
-    bpdu = (struct rstp_bpdu *)(frame + ETH_SIZE + LLC_SIZE);
     bpdu->protocol_identifier = htons(0);
     bpdu->protocol_version_identifier = 0;
     bpdu->bpdu_type = CONFIGURATION_BPDU;
@@ -680,19 +670,9 @@ tx_config(struct rstp_port * p)
 void
 tx_rstp(struct rstp_port * p)
 {
-    char frame[200];
-    struct ethernet_hdr * eth;
-    struct rstp_bpdu * bpdu;
-    bzero(frame, 200);
+    struct rstp_bpdu * bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
+    bzero(bpdu, sizeof(struct rstp_bpdu));
 
-    eth = (struct ethernet_hdr *)frame;
-    memcpy(eth->dhost, eth_addr_rstp, ETH_ADDR_LEN);
-    memcpy(eth->shost, p->rstp->bridge_identifier+2, ETH_ADDR_LEN);
-    eth->length = htons(sizeof(struct rstp_bpdu) + LLC_SIZE);
-    eth->dsap = RSTP_LLC_DSAP;
-    eth->ssap = RSTP_LLC_SSAP;
-    eth->cntrl = RSTP_LLC_CNTL;
-    bpdu = (struct rstp_bpdu *)(frame + ETH_SIZE + LLC_SIZE);
     bpdu->protocol_identifier = htons(0);
     bpdu->protocol_version_identifier = 2;
     bpdu->bpdu_type = RAPID_SPANNING_TREE_BPDU;
@@ -739,19 +719,9 @@ tx_rstp(struct rstp_port * p)
 void
 tx_tcn(struct rstp_port * p)
 {
-    char frame[200];
-    struct ethernet_hdr * eth;
-    struct rstp_bpdu * bpdu;
-    memset(frame,'0',sizeof(frame));
+    struct rstp_bpdu * bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
+    bzero(bpdu, sizeof(struct rstp_bpdu));
 
-    eth  = (struct ethernet_hdr *)frame;
-    memcpy(eth->dhost, eth_addr_rstp, ETH_ADDR_LEN);
-    memcpy(eth->shost, p->rstp->bridge_identifier+2, ETH_ADDR_LEN);
-    eth->length = htons(sizeof(struct rstp_bpdu) + LLC_SIZE);
-    eth->dsap = RSTP_LLC_DSAP;
-    eth->ssap = RSTP_LLC_SSAP;
-    eth->cntrl = RSTP_LLC_CNTL;
-    bpdu = (struct rstp_bpdu *)(frame + ETH_SIZE + LLC_SIZE);
     bpdu->protocol_identifier = htons(0);
     bpdu->protocol_version_identifier = 0;
     bpdu->bpdu_type = TOPOLOGY_CHANGE_NOTIFICATION;

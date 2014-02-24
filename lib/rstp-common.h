@@ -243,6 +243,7 @@ enum rstp_bpdu_flag {
 } bpdu_flag;
 
 /* Rapid Spanning Tree BPDU [9.3.3] */
+OVS_PACKED(
 struct rstp_bpdu {
     uint16_t protocol_identifier;
     uint8_t  protocol_version_identifier;
@@ -254,7 +255,8 @@ struct rstp_bpdu {
     uint8_t  hello_time[2];
     uint8_t  forward_delay[2];
     uint8_t  version1_length;
-};
+    uint8_t  padding[7];
+});
 
 enum rstp_admin_point_to_point_mac_state {
 	RSTP_ADMIN_P2P_MAC_FORCE_TRUE,
