@@ -680,7 +680,7 @@ compose_slow_path(struct udpif *udpif, struct xlate_out *xout,
     cookie.slow_path.unused = 0;
     cookie.slow_path.reason = xout->slow;
 
-    port = xout->slow & (SLOW_CFM | SLOW_BFD | SLOW_LACP | SLOW_STP)
+    port = xout->slow & (SLOW_CFM | SLOW_BFD | SLOW_LACP | SLOW_STP | SLOW_RSTP)
         ? ODPP_NONE
         : odp_in_port;
     pid = dpif_port_get_pid(udpif->dpif, port, flow_hash_5tuple(flow, 0));
