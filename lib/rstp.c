@@ -1076,6 +1076,19 @@ rstp_port_get_aux(struct rstp_port *p)
     return aux;
 }
 
+/* Returns true if 'state' is one in which BPDU packets should be received
+ * and transmitted on a port, false otherwise.
+ */
+ bool
+ rstp_should_manage_bpdu(enum rstp_state state)
+ {
+     if (state == RSTP_LEARNING || state == RSTP_FORWARDING) {
+         return true;
+     } else {
+         return false;
+     }
+ }
+
 /* Returns true if 'state' is one in which packets received on a port should
  * be forwarded, false otherwise.
  *

@@ -1134,7 +1134,7 @@ xport_get_rstp_port(const struct xport *xport)
         : NULL;
 }
 
-static enum rstp_state
+static bool
 xport_rstp_learn_state(const struct xport *xport)
 {
     struct rstp_port *rp = xport_get_rstp_port(xport);
@@ -1146,6 +1146,13 @@ xport_rstp_forward_state(const struct xport *xport)
 {
     struct rstp_port *rp = xport_get_rstp_port(xport);
     return rstp_forward_in_state(rp ? rstp_port_get_state(rp) : RSTP_DISABLED);
+}
+
+static bool
+xport_rstp_should_manage_bpdu(const struct xport *xport)
+{
+    struct rstp_port *rp = xport_get_rstp_port(xport);
+    return rstp_should_manage_bpdu(rp ? rstp_port_get_state(rp) : RSTP_DISABLED);
 }
 
 /* Returns true if RSTP should process 'flow'.  Sets fields in 'wc' that
@@ -2225,9 +2232,17 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
                          "skipping output");
             return;
         }
-    } else if (check_rstp && !xport_rstp_forward_state(xport)) {
-        xlate_report(ctx, "RSTP not int forwarding state, skipping output");
-        return;
+    } else if (check_rstp) {
+        if (eth_addr_equals(ctx->base_flow.dl_dst, eth_addr_rstp)) {
+            if (!xport_rstp_should_manage_bpdu(xport)) {
+                xlate_report(ctx, "RSTP not in learning or forwarding state, "
+                             "skipping bpdu output");
+                return;
+            }
+        } else if (!xport_rstp_forward_state(xport)) {
+            xlate_report(ctx, "RSTP not int forwarding state, skipping output");
+            return;
+        }
     }
 
     if (mbridge_has_mirrors(ctx->xbridge->mbridge) && xport->xbundle) {
