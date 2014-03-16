@@ -2220,28 +2220,21 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
     } else if (xport->config & OFPUTIL_PC_NO_FWD) {
         xlate_report(ctx, "OFPPC_NO_FWD set, skipping output");
         return;
-    } else if (check_stp) {
+    } else if (check_stp && check_rstp) {
         if (is_stp(&ctx->base_flow)) {
-            if (!xport_stp_listen_state(xport)) {
+            if (!xport_stp_listen_state(xport) &&
+                !xport_rstp_should_manage_bpdu(xport)) {
                 xlate_report(ctx, "STP not in listening state, "
-                             "skipping bpdu output");
+                        "RSTP does not manage BPDU in this state, "
+                        "skipping bpdu output");
+                return;
+            } else if (!xport_stp_forward_state(xport) &&
+                       !xport_rstp_forward_state(xport)) {
+                xlate_report(ctx, "STP not in forwarding state, "
+                        "RSTP not in forwarding state, "
+                        "skipping output");
                 return;
             }
-        } else if (!xport_stp_forward_state(xport)) {
-            xlate_report(ctx, "STP not in forwarding state, "
-                         "skipping output");
-            return;
-        }
-    } else if (check_rstp) {
-        if (eth_addr_equals(ctx->base_flow.dl_dst, eth_addr_rstp)) {
-            if (!xport_rstp_should_manage_bpdu(xport)) {
-                xlate_report(ctx, "RSTP not in learning or forwarding state, "
-                             "skipping bpdu output");
-                return;
-            }
-        } else if (!xport_rstp_forward_state(xport)) {
-            xlate_report(ctx, "RSTP not int forwarding state, skipping output");
-            return;
         }
     }
 
