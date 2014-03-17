@@ -2223,10 +2223,10 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
     } else if (check_stp && check_rstp) {
         if (is_stp(&ctx->base_flow)) {
             if (!xport_stp_listen_state(xport) &&
-                !xport_rstp_should_manage_bpdu(xport)) {
+                    !xport_rstp_should_manage_bpdu(xport)) {
                 xlate_report(ctx, "STP not in listening state, "
-                        "RSTP does not manage BPDU in this state, "
-                        "skipping bpdu output");
+                             "RSTP does not manage BPDU in this state, "
+                             "skipping bpdu output");
                 return;
             } else if (!xport_stp_forward_state(xport) &&
                        !xport_rstp_forward_state(xport)) {

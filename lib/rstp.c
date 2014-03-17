@@ -1082,7 +1082,8 @@ rstp_port_get_aux(struct rstp_port *p)
  bool
  rstp_should_manage_bpdu(enum rstp_state state)
  {
-     if (state == RSTP_LEARNING || state == RSTP_FORWARDING) {
+     if (state == RSTP_DISCARDING || state == RSTP_LEARNING ||
+         state == RSTP_FORWARDING) {
          return true;
      } else {
          return false;
