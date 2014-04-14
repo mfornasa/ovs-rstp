@@ -10,6 +10,7 @@
 #include "ofpbuf.h"
 #include "packets.h"
 #include "vlog.h"
+#include "ovstest.h"
 
 struct bpdu {
     int port_no;
@@ -76,7 +77,7 @@ send_bpdu(struct ofpbuf *pkt, int port_no, void *b_)
     assert(port_no < b->n_ports);
     lan = b->ports[port_no];
     if (lan) {
-        const void *data = ofpbuf_get_l3(pkt);
+        const void *data = ofpbuf_l3(pkt);
         size_t size = (char *) ofpbuf_tail(pkt) - (char *) data;
         int i;
 
@@ -422,8 +423,8 @@ must_match(const char *want)
     }
 }
 
-int
-main(int argc, char *argv[])
+static void
+test_rstp_main(int argc, char *argv[])
 {
     struct test_case *tc;
     FILE *input_file;
@@ -656,5 +657,6 @@ main(int argc, char *argv[])
         free(bridge);
     }
     free(tc);
-    return 0;
 }
+
+OVSTEST_REGISTER("test-rstp", test_rstp_main);

@@ -191,87 +191,6 @@ noinst_man_MANS += tests/test-controller.8
 tests_test_controller_SOURCES = tests/test-controller.c
 tests_test_controller_LDADD = lib/libopenvswitch.la
 
-noinst_PROGRAMS += tests/test-csum
-tests_test_csum_SOURCES = tests/test-csum.c
-tests_test_csum_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-file_name
-tests_test_file_name_SOURCES = tests/test-file_name.c
-tests_test_file_name_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-flows
-tests_test_flows_SOURCES = tests/test-flows.c
-tests_test_flows_LDADD = lib/libopenvswitch.la
-dist_check_SCRIPTS = tests/flowgen.pl
-
-noinst_PROGRAMS += tests/test-hash
-tests_test_hash_SOURCES = tests/test-hash.c
-tests_test_hash_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-heap
-tests_test_heap_SOURCES = tests/test-heap.c
-tests_test_heap_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-hindex
-tests_test_hindex_SOURCES = tests/test-hindex.c
-tests_test_hindex_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-hmap
-tests_test_hmap_SOURCES = tests/test-hmap.c
-tests_test_hmap_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-json
-tests_test_json_SOURCES = tests/test-json.c
-tests_test_json_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-jsonrpc
-tests_test_jsonrpc_SOURCES = tests/test-jsonrpc.c
-tests_test_jsonrpc_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-list
-tests_test_list_SOURCES = tests/test-list.c
-tests_test_list_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-lockfile
-tests_test_lockfile_SOURCES = tests/test-lockfile.c
-tests_test_lockfile_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-multipath
-tests_test_multipath_SOURCES = tests/test-multipath.c
-tests_test_multipath_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-packets
-tests_test_packets_SOURCES = tests/test-packets.c
-tests_test_packets_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-random
-tests_test_random_SOURCES = tests/test-random.c
-tests_test_random_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-rstp
-tests_test_rstp_SOURCES = tests/test-rstp.c
-tests_test_rstp_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-stp
-tests_test_stp_SOURCES = tests/test-stp.c
-tests_test_stp_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-sflow
-tests_test_sflow_SOURCES = tests/test-sflow.c
-tests_test_sflow_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-netflow
-tests_test_netflow_SOURCES = tests/test-netflow.c
-tests_test_netflow_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-unix-socket
-tests_test_unix_socket_SOURCES = tests/test-unix-socket.c
-tests_test_unix_socket_LDADD = lib/libopenvswitch.la
-
-noinst_PROGRAMS += tests/test-odp
-tests_test_odp_SOURCES = tests/test-odp.c
-tests_test_odp_LDADD = lib/libopenvswitch.la
-
 noinst_PROGRAMS += tests/test-ovsdb
 tests_test_ovsdb_SOURCES = \
 	tests/test-ovsdb.c \
@@ -317,6 +236,7 @@ tests_ovstest_SOURCES = \
 	tests/test-packets.c \
 	tests/test-random.c \
 	tests/test-reconnect.c \
+    tests/test-rstp.c \
 	tests/test-sflow.c \
 	tests/test-sha1.c \
 	tests/test-stp.c \

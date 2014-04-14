@@ -1169,7 +1169,7 @@ rstp_process_packet(const struct xport *xport, const struct ofpbuf *packet)
 {
     struct rstp_port *rp = xport_get_rstp_port(xport);
     struct ofpbuf payload = *packet;
-    struct eth_header *eth = payload.data;
+    struct eth_header *eth = ofpbuf_data(&payload);
 
     /* Sink packets on ports that have RSTP disabled when the bridge has
      * RSTP enabled. */
@@ -1178,12 +1178,12 @@ rstp_process_packet(const struct xport *xport, const struct ofpbuf *packet)
     }
 
     /* Trim off padding on payload. */
-    if (payload.size > ntohs(eth->eth_type) + ETH_HEADER_LEN) {
-        payload.size = ntohs(eth->eth_type) + ETH_HEADER_LEN;
+    if (ofpbuf_size(&payload) > ntohs(eth->eth_type) + ETH_HEADER_LEN) {
+        ofpbuf_set_size(&payload, ntohs(eth->eth_type) + ETH_HEADER_LEN);
     }
 
     if (ofpbuf_try_pull(&payload, ETH_HEADER_LEN + LLC_HEADER_LEN)) {
-        rstp_received_bpdu(rp, payload.data, payload.size);
+        rstp_received_bpdu(rp, ofpbuf_data(&payload), ofpbuf_size(&payload));
     }
 }
 
@@ -3789,7 +3789,7 @@ xlate_actions(struct xlate_in *xin, struct xlate_out *xout)
                 ofpbuf_set_size(&ctx.xout->odp_actions, sample_actions_len);
             }
             else if (in_port && !xport_rstp_forward_state(in_port)) {
-                ctx.xout->odp_actions.size = sample_actions_len;
+                ofpbuf_set_size(&ctx.xout->odp_actions, sample_actions_len);
             }
         }
 
