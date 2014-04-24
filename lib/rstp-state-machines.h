@@ -97,11 +97,14 @@ void new_tc_while(struct rstp_port *);
 void set_tc_prop_tree(struct rstp_port *);
 void set_tc_prop_bridge(struct rstp_port *);
 
-#define NOT_SUPERIOR 0
-#define SUPERIOR_ABSOLUTE 1
-#define SUPERIOR_SAME_DES 2
-#define SAME 3
-int rstp_priority_vector_is_superior(struct rstp_priority_vector *v1,
+enum vector_comparison {
+    NOT_SUPERIOR = 0,
+    SUPERIOR_ABSOLUTE = 1,
+    SUPERIOR_SAME_DES = 2,
+    SAME = 3
+};
+
+enum vector_comparison rstp_priority_vector_is_superior(struct rstp_priority_vector *v1,
                                      struct rstp_priority_vector *v2);
 
 #endif /* rstp-state-machines.h */

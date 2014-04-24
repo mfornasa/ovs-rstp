@@ -859,7 +859,8 @@ port_transmit_sm(struct rstp_port *p)
 int
 rcv_info(struct rstp_port *p)
 {
-    int cp, ct;
+    enum vector_comparison cp;
+    int ct;
     unsigned int role;
 
     memcpy(&p->msg_priority,  &p->received_bpdu_buffer.priority_vector, sizeof(struct rstp_priority_vector4));
@@ -1731,7 +1732,8 @@ topology_change_sm(struct rstp_port *p)
       ((RD == RootBridgeID) && (RPCD == RootPathCost) && (D == designated_bridge_id) && (PD < designated_port_id)) ||
       ((D  == designated_bridge_id.BridgeAddress) && (PD == designated_port_id.PortNumber))
 */
-int rstp_priority_vector_is_superior(struct rstp_priority_vector *v1, struct rstp_priority_vector *v2)
+enum vector_comparison
+rstp_priority_vector_is_superior(struct rstp_priority_vector *v1, struct rstp_priority_vector *v2)
 {
     if (memcmp(v1, v2, sizeof(struct rstp_priority_vector4)) < 0) {
         return SUPERIOR_ABSOLUTE;
