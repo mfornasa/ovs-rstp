@@ -54,7 +54,7 @@ int topology_change_sm(struct rstp_port *);
 /* port_timers_sm() not defined as a state machine */
 
 /* Methods called by the Forwarding Layer, through functions of rstp.h. */
-int move_rstp(struct rstp * );
+int move_rstp(struct rstp *);
 void decrease_rstp_port_timers(struct rstp *);
 int validate_received_bpdu(struct rstp_port *, const void *bpdu, size_t);
 void process_received_bpdu(struct rstp_port *, const void *, size_t);
@@ -67,7 +67,7 @@ void set_selected_tree(struct rstp *);
 
 void updt_bpdu_version(struct rstp_port *);
 void record_agreement(struct rstp_port *);
-void set_tc_flags(struct rstp_port * );
+void set_tc_flags(struct rstp_port *);
 void record_dispute(struct rstp_port *);
 void record_proposal(struct rstp_port *);
 void record_priority(struct rstp_port *);
@@ -101,7 +101,7 @@ void set_tc_prop_bridge(struct rstp_port *);
 #define SUPERIOR_ABSOLUTE 1
 #define SUPERIOR_SAME_DES 2
 #define SAME 3
-int rstp_priority_vector_is_superior(struct rstp_priority_vector * v1,
-                                     struct rstp_priority_vector * v2);
+int rstp_priority_vector_is_superior(struct rstp_priority_vector *v1,
+                                     struct rstp_priority_vector *v2);
 
 #endif /* rstp-state-machines.h */

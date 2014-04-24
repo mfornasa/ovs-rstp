@@ -59,7 +59,7 @@ void reinitialize_rstp__(struct rstp *);
 int is_port_number_taken__(struct rstp *, int);
 
 char *
-get_id_string_from_uint8_t(uint8_t* m, int length)
+get_id_string_from_uint8_t(uint8_t *m, int length)
 {
     int i;
     char *string;
@@ -181,7 +181,7 @@ rstp_init(void)
 
 /* Creates and returns a new RSTP instance that initially has no ports enabled. */
 struct rstp *
-rstp_create(const char *name, uint8_t * bridge_address,
+rstp_create(const char *name, uint8_t *bridge_address,
         void (*send_bpdu)(struct ofpbuf *bpdu, int port_no, void *aux),
         void *aux)
 {
@@ -333,7 +333,7 @@ void
 reinitialize_rstp__(struct rstp *rstp)
 {
     char *name;
-    uint8_t * bridge_address;
+    uint8_t *bridge_address;
     void *send_bpdu;
     void *aux;
     struct ovs_refcount ref_count;
@@ -521,11 +521,11 @@ rstp_set_bridge_times(struct rstp *rstp, int new_forward_delay, int new_hello_ti
 /* Sets the port id, it is called by rstp_port_set_port_number() or
     rstp_port_set_priority(). */
 void
-set_port_id__(struct rstp_port * p) /* normally used when mutex is already locked */
+set_port_id__(struct rstp_port *p) /* normally used when mutex is already locked */
 {
     struct rstp *rstp;
     uint16_t temp;
-    uint8_t * ptemp;
+    uint8_t *ptemp;
 
     rstp = p->rstp;
     /* [9.2.7] Port identifier. */
@@ -735,7 +735,7 @@ rstp_get_port(struct rstp *rstp, int port_no)
 
 /* Updates the port_enabled parameter. */
 void
-update_port_enabled__(struct rstp_port * p)
+update_port_enabled__(struct rstp_port *p)
 {
     if (p->mac_operational && p->is_administrative_bridge_port == RSTP_ADMIN_BRIDGE_PORT_STATE_ENABLED) {
         p->port_enabled = true;
@@ -746,7 +746,7 @@ update_port_enabled__(struct rstp_port * p)
 
 /* Sets the port MAC_Operational parameter [6.4.2]. */
 int
-rstp_port_set_mac_operational(struct rstp_port * p, uint8_t new_mac_operational)
+rstp_port_set_mac_operational(struct rstp_port *p, uint8_t new_mac_operational)
 {
     struct rstp *rstp;
     
@@ -766,7 +766,7 @@ rstp_port_set_mac_operational(struct rstp_port * p, uint8_t new_mac_operational)
 
 /* Gets the port MAC_Operational parameter [6.4.2]. */
 uint8_t
-rstp_port_get_mac_operational(struct rstp_port * p)
+rstp_port_get_mac_operational(struct rstp_port *p)
 {
     uint8_t value;
     
@@ -1025,7 +1025,7 @@ rstp_is_root_bridge(const struct rstp *rstp)
 uint8_t *
 rstp_get_designated_root(const struct rstp *rstp)
 {
-    uint8_t * designated_root;
+    uint8_t *designated_root;
     
     designated_root = xzalloc(sizeof(uint8_t [8]));
     ovs_mutex_lock(&mutex);

@@ -78,7 +78,7 @@ int
 validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
 {
     /* Validation of received BPDU, see [9.3.4]. */
-    const struct rstp_bpdu * temp;
+    const struct rstp_bpdu *temp;
     
     temp = bpdu;
     if (bpdu_size < 4 || temp->protocol_identifier != 0) {
@@ -115,7 +115,7 @@ validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
 */
 #define MAX_RSTP_ITERATIONS 1000 /* safeguard */
 int
-move_rstp(struct rstp * rstp )
+move_rstp(struct rstp *rstp )
 {
     int port_no, num_iterations;
     num_iterations = 0;
@@ -146,7 +146,7 @@ move_rstp(struct rstp * rstp )
     return 0;
 }
 
-void decrease_rstp_port_timers(struct rstp * r)
+void decrease_rstp_port_timers(struct rstp *r)
 {
     int port_no;
     
@@ -168,7 +168,7 @@ void decrease_rstp_port_timers(struct rstp * r)
 }
 
 void
-decrement_timer(unsigned int * timer)
+decrement_timer(unsigned int *timer)
 {
     if (*timer!=0) {
         *timer = *timer - 1;
@@ -179,7 +179,7 @@ decrement_timer(unsigned int * timer)
 /* [17.28] Port Role Selection state machine. */
 
 void
-updt_role_disabled_tree(struct rstp * r)
+updt_role_disabled_tree(struct rstp *r)
 {
     int port_no;
     
@@ -190,7 +190,7 @@ updt_role_disabled_tree(struct rstp * r)
 }
 
 void
-clear_reselect_tree(struct rstp * r)
+clear_reselect_tree(struct rstp *r)
 {
     int port_no;
     
@@ -201,7 +201,7 @@ clear_reselect_tree(struct rstp * r)
 }
 
 void
-updt_roles_tree(struct rstp * r)
+updt_roles_tree(struct rstp *r)
 {
     int port_no;
     int vsel;
@@ -296,7 +296,7 @@ updt_roles_tree(struct rstp * r)
 }
 
 void
-set_selected_tree(struct rstp * r)
+set_selected_tree(struct rstp *r)
 {
     int port_no;
 
@@ -313,7 +313,7 @@ set_selected_tree(struct rstp * r)
 }
 
 int
-port_role_selection_sm(struct rstp * r)
+port_role_selection_sm(struct rstp *r)
 {
     enum port_role_selection_state_machine old_state;
     int port_no;
@@ -364,7 +364,7 @@ port_role_selection_sm(struct rstp * r)
 /* [17.23 - Port receive state machine] */
 
 void
-updt_bpdu_version(struct rstp_port * p)  /* [17.21.22] */
+updt_bpdu_version(struct rstp_port *p)  /* [17.21.22] */
 {
     switch (p->received_bpdu_buffer.bpdu_type) {
     case CONFIGURATION_BPDU:
@@ -383,10 +383,10 @@ updt_bpdu_version(struct rstp_port * p)  /* [17.21.22] */
 }
 
 int
-port_receive_sm(struct rstp_port * p)
+port_receive_sm(struct rstp_port *p)
 {
     enum port_receive_state_machine old_state;
-    struct rstp * r;
+    struct rstp *r;
 
     old_state = p->port_receive_sm_state;
     r = p->rstp;
@@ -433,10 +433,10 @@ port_receive_sm(struct rstp_port * p)
 
 /* [17.24 - Port Protocol Migration state machine] */
 int
-port_protocol_migration_sm(struct rstp_port * p)
+port_protocol_migration_sm(struct rstp_port *p)
 {
     enum port_protocol_migration_state_machine old_state;
-    struct rstp * r;
+    struct rstp *r;
     
     old_state = p->port_protocol_migration_sm_state;
     r = p->rstp;
@@ -496,10 +496,10 @@ port_protocol_migration_sm(struct rstp_port * p)
 
 /* [17.25 - Bridge Detection state machine] */
 int
-bridge_detection_sm(struct rstp_port * p)
+bridge_detection_sm(struct rstp_port *p)
 {
     enum bridge_detection_state_machine old_state;
-    struct rstp * r;
+    struct rstp *r;
 
     old_state = p->bridge_detection_sm_state;
     r = p->rstp;
@@ -570,9 +570,9 @@ OVS_REQUIRES(mutex)
 }
 
 void
-record_agreement(struct rstp_port * p)
+record_agreement(struct rstp_port *p)
 {
-    struct rstp * r;
+    struct rstp *r;
     
     r = p->rstp;
     if (r->rstp_version && p->oper_point_to_point_mac && ((p->received_bpdu_buffer.flags & BPDU_FLAG_AGREEMENT) != 0)) {
@@ -584,7 +584,7 @@ record_agreement(struct rstp_port * p)
 }
 
 void
-set_tc_flags(struct rstp_port * p)
+set_tc_flags(struct rstp_port *p)
 {
     /* Sets rcvd_tc and/or rcvd_tc_ack if the Topology Change and/or Topology
        Change Acknowledgment flags, respectively, are set in a ConfigBPDU or
@@ -605,7 +605,7 @@ set_tc_flags(struct rstp_port * p)
 }
 
 void
-record_dispute(struct rstp_port * p)
+record_dispute(struct rstp_port *p)
 {
     if ((p->received_bpdu_buffer.flags & BPDU_FLAG_LEARNING) != 0) {
         p->agreed = true;
@@ -614,7 +614,7 @@ record_dispute(struct rstp_port * p)
 }
 
 void
-record_proposal(struct rstp_port * p)
+record_proposal(struct rstp_port *p)
 {
     unsigned int role = ((p->received_bpdu_buffer.flags)&0xC)>>2;
     if ((role == PORT_DES) && ((p->received_bpdu_buffer.flags & BPDU_FLAG_PROPOSAL) != 0)) {
@@ -623,13 +623,13 @@ record_proposal(struct rstp_port * p)
 }
 
 void
-record_priority(struct rstp_port * p)
+record_priority(struct rstp_port *p)
 {
     memcpy(&p->port_priority, &p->msg_priority, sizeof(struct rstp_priority_vector4));
 }
 
 void
-record_times(struct rstp_port * p)
+record_times(struct rstp_port *p)
 {
     p->port_times.message_age = p->msg_times.message_age;
     p->port_times.max_age = p->msg_times.max_age;
@@ -642,7 +642,7 @@ record_times(struct rstp_port * p)
 }
 
 void
-updt_rcvd_info_while(struct rstp_port * p)
+updt_rcvd_info_while(struct rstp_port *p)
 {
     if (p->port_times.message_age + 1 <= p->port_times.max_age) {
         p->rcvd_info_while = p->port_times.hello_time * 3;
@@ -652,7 +652,7 @@ updt_rcvd_info_while(struct rstp_port * p)
 }
 
 void
-time_encode(unsigned int value, uint8_t * encoded)
+time_encode(unsigned int value, uint8_t *encoded)
 {
     uint16_t val;
     
@@ -661,7 +661,7 @@ time_encode(unsigned int value, uint8_t * encoded)
 }
 
 unsigned int
-time_decode(uint8_t * encoded)
+time_decode(uint8_t *encoded)
 {
     uint16_t val;
 
@@ -671,9 +671,9 @@ time_decode(uint8_t * encoded)
 
 /* [17.21.19] */
 void
-tx_config(struct rstp_port * p)
+tx_config(struct rstp_port *p)
 {
-    struct rstp_bpdu * bpdu;
+    struct rstp_bpdu *bpdu;
     
     bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
     bzero(bpdu, sizeof(struct rstp_bpdu));
@@ -697,9 +697,9 @@ tx_config(struct rstp_port * p)
 
 /* [17.21.20] */
 void
-tx_rstp(struct rstp_port * p)
+tx_rstp(struct rstp_port *p)
 {
-    struct rstp_bpdu * bpdu;
+    struct rstp_bpdu *bpdu;
     
     bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
     bzero(bpdu, sizeof(struct rstp_bpdu));
@@ -748,9 +748,9 @@ tx_rstp(struct rstp_port * p)
 
 /* [17.21.21] */
 void
-tx_tcn(struct rstp_port * p)
+tx_tcn(struct rstp_port *p)
 {
-    struct rstp_bpdu * bpdu;
+    struct rstp_bpdu *bpdu;
     
     bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
     bzero(bpdu, sizeof(struct rstp_bpdu));
@@ -762,10 +762,10 @@ tx_tcn(struct rstp_port * p)
 }
 
 int
-port_transmit_sm(struct rstp_port * p)
+port_transmit_sm(struct rstp_port *p)
 {
     enum port_transmit_state_machine old_state;
-    struct rstp * r;
+    struct rstp *r;
     
     old_state = p->port_transmit_sm_state;
     r = p->rstp;
@@ -857,7 +857,7 @@ port_transmit_sm(struct rstp_port * p)
 #define MINE 1
 
 int
-rcv_info(struct rstp_port * p)
+rcv_info(struct rstp_port *p)
 {
     int cp, ct;
     unsigned int role;
@@ -915,7 +915,7 @@ rcv_info(struct rstp_port * p)
 }
 
 int
-better_or_same_info(struct rstp_port * p, int new_info_is)
+better_or_same_info(struct rstp_port *p, int new_info_is)
 {
     /* >= SUPERIOR_ABSOLUTE means that the vector is better or the same. */
     if ((new_info_is == RECEIVED && p->info_is == INFO_IS_RECEIVED && rstp_priority_vector_is_superior(&p->msg_priority, &p->port_priority) >= SUPERIOR_ABSOLUTE)
@@ -927,10 +927,10 @@ better_or_same_info(struct rstp_port * p, int new_info_is)
 }
 
 int
-port_information_sm(struct rstp_port * p)
+port_information_sm(struct rstp_port *p)
 {
     enum port_information_state_machine old_state;
-    struct rstp * r;
+    struct rstp *r;
 
     old_state = p->port_information_sm_state;
     r = p->rstp;
@@ -1089,9 +1089,9 @@ port_information_sm(struct rstp_port * p)
 /* [17.29 Port Role Transitions state machine] */
 
 void
-set_re_root_tree(struct rstp_port * p)
+set_re_root_tree(struct rstp_port *p)
 {
-    struct rstp * r;
+    struct rstp *r;
     int port_no;
 
     r = p->rstp;
@@ -1102,9 +1102,9 @@ set_re_root_tree(struct rstp_port * p)
 }
 
 void
-set_sync_tree(struct rstp_port * p)
+set_sync_tree(struct rstp_port *p)
 {
-    struct rstp * r;
+    struct rstp *r;
     int port_no;
 
     r = p->rstp;
@@ -1115,20 +1115,20 @@ set_sync_tree(struct rstp_port * p)
 }
 
 int
-hello_time(struct rstp_port * p)
+hello_time(struct rstp_port *p)
 {
     return p->designated_times.hello_time;
 }
 
 int
-fwd_delay(struct rstp_port * p)
+fwd_delay(struct rstp_port *p)
 {
     return p->designated_times.forward_delay;
 }
 
 
 int
-forward_delay (struct rstp_port * p)
+forward_delay (struct rstp_port *p)
 {
     if (p->send_rstp) {
         return hello_time(p);
@@ -1138,9 +1138,9 @@ forward_delay (struct rstp_port * p)
 }
 
 int
-edge_delay (struct rstp_port * p)
+edge_delay (struct rstp_port *p)
 {
-    struct rstp * r;
+    struct rstp *r;
     
     r = p->rstp;
     if (p->oper_point_to_point_mac == 1) {
@@ -1151,7 +1151,7 @@ edge_delay (struct rstp_port * p)
 }
 
 int
-check_selected_role_change(struct rstp_port * p, int current_role_state)
+check_selected_role_change(struct rstp_port *p, int current_role_state)
 {
     if (p->selected && !p->updt_info && (p->role != p->selected_role) && (p->selected_role != current_role_state)) {
         switch (p->selected_role) {
@@ -1179,9 +1179,9 @@ check_selected_role_change(struct rstp_port * p, int current_role_state)
 }
 
 int
-re_rooted(struct rstp_port * p)
+re_rooted(struct rstp_port *p)
 {
-    struct rstp * r;
+    struct rstp *r;
     int port_no;
     
     r = p->rstp;
@@ -1195,7 +1195,7 @@ re_rooted(struct rstp_port * p)
 }
 
 int
-all_synced(struct rstp * r)
+all_synced(struct rstp *r)
 {
     int port_no;
 
@@ -1209,10 +1209,10 @@ all_synced(struct rstp * r)
 }
 
 int
-port_role_transition_sm(struct rstp_port * p)
+port_role_transition_sm(struct rstp_port *p)
 {
     enum port_role_transition_state_machine old_state;
-    struct rstp * r;
+    struct rstp *r;
     enum rstp_port_role last_role;
 
     old_state = p->port_role_transition_sm_state;
@@ -1469,7 +1469,7 @@ port_role_transition_sm(struct rstp_port * p)
 /* [17.30 - Port state transition state machine] */
 
 void
-enable_learning(struct rstp_port * p)
+enable_learning(struct rstp_port *p)
 {
     /* [17.21.6 enableLearning()] An implementation dependent procedure that
        causes the Learning Process (7.8) to start learning from frames received
@@ -1480,7 +1480,7 @@ enable_learning(struct rstp_port * p)
 }
 
 void
-enable_forwarding(struct rstp_port * p)
+enable_forwarding(struct rstp_port *p)
 {
     /* [17.21.5 enableForwarding()] An implementation dependent procedure that
        causes the Forwarding Process (7.7) to start forwarding frames through the
@@ -1490,7 +1490,7 @@ enable_forwarding(struct rstp_port * p)
 }
 
 void
-disable_learning(struct rstp_port * p)
+disable_learning(struct rstp_port *p)
 {
     /* [17.21.4 - disableLearning()] An implementation dependent procedure that
        causes the Learning Process (7.8) to stop learning from the source address
@@ -1501,7 +1501,7 @@ disable_learning(struct rstp_port * p)
 }
 
 void
-disable_forwarding(struct rstp_port * p)
+disable_forwarding(struct rstp_port *p)
 {
     /* [17.21.3 - disableForwarding()] An implementation dependent procedure
        that causes the Forwarding Process (7.7) to stop forwarding frames through
@@ -1511,10 +1511,10 @@ disable_forwarding(struct rstp_port * p)
 }
 
 int
-port_state_transition_sm(struct rstp_port * p)
+port_state_transition_sm(struct rstp_port *p)
 {
     enum port_state_transition_state_machine old_state;
-    struct rstp * r;
+    struct rstp *r;
 
     old_state = p->port_state_transition_sm_state;
     r = p->rstp;
@@ -1574,9 +1574,9 @@ port_state_transition_sm(struct rstp_port * p)
 /* [17.31 - Topology Change state machine] */
 
 void
-new_tc_while(struct rstp_port * p)
+new_tc_while(struct rstp_port *p)
 {
-    struct rstp * r;
+    struct rstp *r;
     
     r = p->rstp;
     if (p->tc_while == 0 && p->send_rstp == true) {
@@ -1592,9 +1592,9 @@ new_tc_while(struct rstp_port * p)
    Sets tcprop for all Ports except the Port that called the procedure.
 */
 void
-set_tc_prop_tree(struct rstp_port * p)
+set_tc_prop_tree(struct rstp_port *p)
 {
-    struct rstp * r;
+    struct rstp *r;
     int port_no;
     
     r = p->rstp;
@@ -1608,16 +1608,16 @@ set_tc_prop_tree(struct rstp_port * p)
 }
 
 void
-set_tc_prop_bridge(struct rstp_port * p)  /* not specified in 802.1D-2004. */
+set_tc_prop_bridge(struct rstp_port *p)  /* not specified in 802.1D-2004. */
 {
     set_tc_prop_tree(p); /* see 802.1w-2001. */
 }
 
 int
-topology_change_sm(struct rstp_port * p)
+topology_change_sm(struct rstp_port *p)
 {
     enum topology_change_state_machine old_state;
-    struct rstp * r;
+    struct rstp *r;
 
     old_state = p->topology_change_sm_state;
     r = p->rstp;
@@ -1731,7 +1731,7 @@ topology_change_sm(struct rstp_port * p)
       ((RD == RootBridgeID) && (RPCD == RootPathCost) && (D == designated_bridge_id) && (PD < designated_port_id)) ||
       ((D  == designated_bridge_id.BridgeAddress) && (PD == designated_port_id.PortNumber))
 */
-int rstp_priority_vector_is_superior(struct rstp_priority_vector * v1, struct rstp_priority_vector * v2)
+int rstp_priority_vector_is_superior(struct rstp_priority_vector *v1, struct rstp_priority_vector *v2)
 {
     if (memcmp(v1, v2, sizeof(struct rstp_priority_vector4)) < 0) {
         return SUPERIOR_ABSOLUTE;
