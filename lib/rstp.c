@@ -244,10 +244,10 @@ rstp_set_bridge_address(struct rstp *rstp, uint8_t bridge_address[6])
     struct rstp_port *p;
     
     VLOG_DBG("%s: set bridge address to %s",
-             rstp->name, get_id_string_from_uint8_t(bridge_address, 6));
+             rstp->name, get_id_string_from_uint8_t(bridge_address, ETH_ADDR_LEN));
     ovs_mutex_lock(&mutex);
-    memcpy(rstp->address, bridge_address, 6);
-    memcpy(rstp->bridge_identifier+2, bridge_address, 6);
+    memcpy(rstp->address, bridge_address, ETH_ADDR_LEN);
+    memcpy(rstp->bridge_identifier+2, bridge_address, ETH_ADDR_LEN);
     set_bridge_priority__(rstp);
 
     /* [17.13] When the bridge address changes, recalculates all priority vectors. */

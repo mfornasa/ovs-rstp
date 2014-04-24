@@ -229,7 +229,7 @@ updt_roles_tree(struct rstp *r)
         n = htonl(root_path_cost);
         memcpy(&candidate_vector.root_path_cost, &n, 4);
 
-        if (memcmp(&candidate_vector.designated_bridge_id[2], &r->bridge_priority.designated_bridge_id[2], 6) == 0) {
+        if (memcmp(&candidate_vector.designated_bridge_id[2], &r->bridge_priority.designated_bridge_id[2], ETH_ADDR_LEN) == 0) {
             break;
         }
         if (rstp_priority_vector_is_superior(&candidate_vector, &best_vector) == SUPERIOR_ABSOLUTE ||
