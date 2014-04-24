@@ -567,7 +567,6 @@ OVS_REQUIRES(mutex)
     llc->llc_ssap = RSTP_LLC_SSAP;
     llc->llc_cntl = RSTP_LLC_CNTL;
     p->rstp->send_bpdu(pkt, rstp_port_no(p), p->rstp->aux);
-    p->tx_count++;
 }
 
 void
@@ -826,7 +825,7 @@ port_transmit_sm (struct rstp_port * p)
     case PORT_TRANSMIT_SM_TRANSMIT_TCN_EXEC:
         p->new_info = false;
         tx_tcn(p);
-        p->tx_count +=1;
+        p->tx_count += 1;
         p->port_transmit_sm_state = PORT_TRANSMIT_SM_TRANSMIT_TCN;
         /* no break */
     case PORT_TRANSMIT_SM_TRANSMIT_TCN:
@@ -835,7 +834,7 @@ port_transmit_sm (struct rstp_port * p)
     case PORT_TRANSMIT_SM_TRANSMIT_RSTP_EXEC:
         p->new_info = false;
         tx_rstp(p);
-        p->tx_count++;
+        p->tx_count += 1;
         p->tc_ack = false;
         p->port_transmit_sm_state = PORT_TRANSMIT_SM_TRANSMIT_RSTP;
         /* no break */
