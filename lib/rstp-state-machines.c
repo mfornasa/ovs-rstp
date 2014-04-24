@@ -79,6 +79,7 @@ validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
 {
     /* Validation of received BPDU, see [9.3.4]. */
     struct rstp_bpdu * temp;
+    
     temp = CONST_CAST(struct rstp_bpdu *, bpdu);
     if (bpdu_size < 4 || temp->protocol_identifier != 0) {
         return -1;
@@ -118,6 +119,7 @@ move_rstp(struct rstp * rstp )
 {
     int port_no, num_iterations;
     num_iterations = 0;
+    
     while (rstp->changes == true && num_iterations < MAX_RSTP_ITERATIONS) {
         VLOG_DBG("%s: move_rstp()", rstp->name);
         rstp->changes = false;
@@ -147,6 +149,7 @@ move_rstp(struct rstp * rstp )
 void decrease_rstp_port_timers(struct rstp * r)
 {
     int port_no;
+    
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p = rstp_get_port(r, port_no);
         decrement_timer(&p->hello_when);
@@ -179,6 +182,7 @@ void
 updt_role_disabled_tree(struct rstp * r)
 {
     int port_no;
+    
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p = rstp_get_port(r, port_no);
         p->selected_role = ROLE_DISABLED;
@@ -189,6 +193,7 @@ void
 clear_reselect_tree(struct rstp * r)
 {
     int port_no;
+    
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p = rstp_get_port(r, port_no);
         p->reselect = false;
@@ -199,8 +204,10 @@ void
 updt_roles_tree(struct rstp * r)
 {
     int port_no;
-    int vsel = -1;
+    int vsel;
     struct rstp_priority_vector best_vector, candidate_vector;
+    
+    vsel = -1;
     memcpy(&best_vector, &r->bridge_priority, sizeof(struct rstp_priority_vector));
     /* Letter c1) */
     memcpy(&r->root_times, &r->bridge_times, sizeof(struct rstp_times));
@@ -292,6 +299,7 @@ void
 set_selected_tree(struct rstp * r)
 {
     int port_no;
+
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p = rstp_get_port(r, port_no);
         if (p->reselect) {
@@ -307,9 +315,12 @@ set_selected_tree(struct rstp * r)
 int
 port_role_selection_sm (struct rstp * r)
 {
-    enum port_role_selection_state_machine old_state = r->port_role_selection_sm_state;
+    enum port_role_selection_state_machine old_state;
     int port_no;
     struct rstp_port *p;
+    
+    old_state = r->port_role_selection_sm_state;
+    
     switch (r->port_role_selection_sm_state) {
     case PORT_ROLE_SELECTION_SM_INIT:
         if (r->begin)
@@ -374,8 +385,12 @@ updt_bpdu_version(struct rstp_port * p)  /* [17.21.22] */
 int
 port_receive_sm(struct rstp_port * p)
 {
-    enum port_receive_state_machine old_state = p->port_receive_sm_state;
-    struct rstp * r = p->rstp;
+    enum port_receive_state_machine old_state;
+    struct rstp * r;
+
+    old_state = p->port_receive_sm_state;
+    r = p->rstp;
+    
     switch (p->port_receive_sm_state) {
     case PORT_RECEIVE_SM_INIT:
         if (r->begin || ((p->rcvd_bpdu || (p->edge_delay_while != r->migrate_time)) && !p->port_enabled)) {
@@ -420,8 +435,12 @@ port_receive_sm(struct rstp_port * p)
 int
 port_protocol_migration_sm (struct rstp_port * p)
 {
-    enum port_protocol_migration_state_machine old_state = p->port_protocol_migration_sm_state;
-    struct rstp * r = p->rstp;
+    enum port_protocol_migration_state_machine old_state;
+    struct rstp * r;
+    
+    old_state = p->port_protocol_migration_sm_state;
+    r = p->rstp;
+
     switch (p->port_protocol_migration_sm_state) {
     case PORT_PROTOCOL_MIGRATION_SM_INIT:
     p->port_protocol_migration_sm_state = PORT_PROTOCOL_MIGRATION_SM_CHECKING_RSTP_EXEC;
@@ -479,8 +498,12 @@ port_protocol_migration_sm (struct rstp_port * p)
 int
 bridge_detection_sm (struct rstp_port * p)
 {
-    enum bridge_detection_state_machine old_state = p->bridge_detection_sm_state;
-    struct rstp * r = p->rstp;
+    enum bridge_detection_state_machine old_state;
+    struct rstp * r;
+
+    old_state = p->bridge_detection_sm_state;
+    r = p->rstp;
+
     switch (p->bridge_detection_sm_state) {
     case BRIDGE_DETECTION_SM_INIT:
     if (r->begin && p->admin_edge) {
@@ -550,7 +573,9 @@ OVS_REQUIRES(mutex)
 void
 record_agreement(struct rstp_port * p)
 {
-    struct rstp * r = p->rstp;
+    struct rstp * r;
+    
+    r = p->rstp;
     if (r->rstp_version && p->oper_point_to_point_mac && ((p->received_bpdu_buffer.flags & BPDU_FLAG_AGREEMENT) != 0)) {
         p->agreed = true;
         p->proposing = false;
@@ -625,13 +650,14 @@ updt_rcvd_info_while(struct rstp_port * p)
      } else {
         p->rcvd_info_while = 0;
      }
-
 }
 
 void
 time_encode(unsigned int value, uint8_t * encoded)
 {
-    uint16_t val = htons(value*256);
+    uint16_t val;
+    
+    val = htons(value*256);
     memcpy(encoded, &val, sizeof(uint16_t));
 }
 
@@ -639,6 +665,7 @@ unsigned int
 time_decode(uint8_t * encoded)
 {
     uint16_t val;
+
     memcpy(&val, encoded, sizeof(uint16_t));
     return (ntohs(val)/256);
 }
@@ -647,7 +674,9 @@ time_decode(uint8_t * encoded)
 void
 tx_config(struct rstp_port * p)
 {
-    struct rstp_bpdu * bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
+    struct rstp_bpdu * bpdu;
+    
+    bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
     bzero(bpdu, sizeof(struct rstp_bpdu));
 
     bpdu->protocol_identifier = htons(0);
@@ -671,7 +700,9 @@ tx_config(struct rstp_port * p)
 void
 tx_rstp(struct rstp_port * p)
 {
-    struct rstp_bpdu * bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
+    struct rstp_bpdu * bpdu;
+    
+    bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
     bzero(bpdu, sizeof(struct rstp_bpdu));
 
     bpdu->protocol_identifier = htons(0);
@@ -720,7 +751,9 @@ tx_rstp(struct rstp_port * p)
 void
 tx_tcn(struct rstp_port * p)
 {
-    struct rstp_bpdu * bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
+    struct rstp_bpdu * bpdu;
+    
+    bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
     bzero(bpdu, sizeof(struct rstp_bpdu));
 
     bpdu->protocol_identifier = htons(0);
@@ -732,8 +765,12 @@ tx_tcn(struct rstp_port * p)
 int
 port_transmit_sm (struct rstp_port * p)
 {
-    enum port_transmit_state_machine old_state = p->port_transmit_sm_state;
-    struct rstp * r = p->rstp;
+    enum port_transmit_state_machine old_state;
+    struct rstp * r;
+    
+    old_state = p->port_transmit_sm_state;
+    r = p->rstp;
+
     switch (p->port_transmit_sm_state) {
     case PORT_TRANSMIT_SM_INIT:
         if (r->begin) {
@@ -893,8 +930,12 @@ better_or_same_info(struct rstp_port * p, int new_info_is)
 int
 port_information_sm (struct rstp_port * p)
 {
-    enum port_information_state_machine old_state = p->port_information_sm_state;
-    struct rstp * r = p->rstp;
+    enum port_information_state_machine old_state;
+    struct rstp * r;
+
+    old_state = p->port_information_sm_state;
+    r = p->rstp;
+
     if (!p->port_enabled && (p->info_is!=INFO_IS_DISABLED)) {
         p->port_information_sm_state = PORT_INFORMATION_SM_DISABLED_EXEC;
     }
@@ -1051,8 +1092,10 @@ port_information_sm (struct rstp_port * p)
 void
 set_re_root_tree(struct rstp_port * p)
 {
-    struct rstp * r = p->rstp;
+    struct rstp * r;
     int port_no;
+
+    r = p->rstp;
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
     struct rstp_port *p1 = rstp_get_port(r, port_no);
         p1->re_root = true;
@@ -1062,8 +1105,10 @@ set_re_root_tree(struct rstp_port * p)
 void
 set_sync_tree(struct rstp_port * p)
 {
-    struct rstp * r = p->rstp;
+    struct rstp * r;
     int port_no;
+
+    r = p->rstp;
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p1 = rstp_get_port(r, port_no);
         p1->sync = true;
@@ -1096,7 +1141,9 @@ forward_delay (struct rstp_port * p)
 int
 edge_delay (struct rstp_port * p)
 {
-    struct rstp * r = p->rstp;
+    struct rstp * r;
+    
+    r = p->rstp;
     if (p->oper_point_to_point_mac == 1) {
         return r->migrate_time;
     } else {
@@ -1135,8 +1182,10 @@ check_selected_role_change(struct rstp_port * p, int current_role_state)
 int
 re_rooted(struct rstp_port * p)
 {
-    struct rstp * r = p->rstp;
+    struct rstp * r;
     int port_no;
+    
+    r = p->rstp;
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p1 = rstp_get_port(r, port_no);
         if ((p1 != p) && (p1->rr_while != 0)) {
@@ -1150,6 +1199,7 @@ int
 all_synced(struct rstp * r)
 {
     int port_no;
+
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p = rstp_get_port(r, port_no);
         if (!(p->selected && p->role == p->selected_role && (p->role == ROLE_ROOT || p->synced == true))) {
@@ -1162,9 +1212,14 @@ all_synced(struct rstp * r)
 int
 port_role_transition_sm (struct rstp_port * p)
 {
-    enum port_role_transition_state_machine old_state = p->port_role_transition_sm_state;
-    struct rstp * r = p->rstp;
-    enum rstp_port_role last_role = p->role;
+    enum port_role_transition_state_machine old_state;
+    struct rstp * r;
+    enum rstp_port_role last_role;
+
+    old_state = p->port_role_transition_sm_state;
+    r = p->rstp;
+    last_role = p->role;
+
     switch (p->port_role_transition_sm_state) {
     case PORT_ROLE_TRANSITION_SM_INIT:
         if (r->begin) {
@@ -1459,8 +1514,12 @@ disable_forwarding(struct rstp_port * p)
 int
 port_state_transition_sm (struct rstp_port * p)
 {
-    enum port_state_transition_state_machine old_state = p->port_state_transition_sm_state;
-    struct rstp * r = p->rstp;
+    enum port_state_transition_state_machine old_state;
+    struct rstp * r;
+
+    old_state = p->port_state_transition_sm_state;
+    r = p->rstp;
+
     switch (p->port_state_transition_sm_state) {
     case PORT_STATE_TRANSITION_SM_INIT:
         if (r->begin) {
@@ -1518,7 +1577,9 @@ port_state_transition_sm (struct rstp_port * p)
 void
 new_tc_while(struct rstp_port * p)
 {
-    struct rstp * r = p->rstp;
+    struct rstp * r;
+    
+    r = p->rstp;
     if (p->tc_while == 0 && p->send_rstp == true) {
         p->tc_while = r->bridge_hello_time + 1;
         p->new_info = true;
@@ -1534,8 +1595,10 @@ new_tc_while(struct rstp_port * p)
 void
 set_tc_prop_tree(struct rstp_port * p)
 {
-    struct rstp * r = p->rstp;
+    struct rstp * r;
     int port_no;
+    
+    r = p->rstp;
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p1 = rstp_get_port(r, port_no);
         /* Set tc_prop on every port, except the one calling this function. */
@@ -1554,8 +1617,12 @@ set_tc_prop_bridge(struct rstp_port * p)  /* not specified in 802.1D-2004. */
 int
 topology_change_sm (struct rstp_port * p)
 {
-    enum topology_change_state_machine old_state = p->topology_change_sm_state;
-    struct rstp * r = p->rstp;
+    enum topology_change_state_machine old_state;
+    struct rstp * r;
+
+    old_state = p->topology_change_sm_state;
+    r = p->rstp;
+
     switch (p->topology_change_sm_state) {
     case TOPOLOGY_CHANGE_SM_INIT:
         if (r->begin) {
