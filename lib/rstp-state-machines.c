@@ -872,7 +872,7 @@ rcv_info(struct rstp_port * p)
         return INFERIOR_ROOT_ALTERNATE_INFO;
     }
 
-    //Otherwise, returns OtherInfo.
+    /* Otherwise, returns OtherInfo. */
     else {
         return OTHER_INFO;
     }
