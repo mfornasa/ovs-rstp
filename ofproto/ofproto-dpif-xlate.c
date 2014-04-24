@@ -1161,7 +1161,7 @@ static bool
 rstp_should_process_flow(const struct flow *flow, struct flow_wildcards *wc)
 {
     memset(&wc->masks.dl_dst, 0xff, sizeof wc->masks.dl_dst);
-    return eth_addr_equals(flow->dl_dst, eth_addr_rstp);
+    return eth_addr_equals(flow->dl_dst, eth_addr_stp);
 }
 
 static void

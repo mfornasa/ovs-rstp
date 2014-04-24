@@ -535,7 +535,7 @@ OVS_REQUIRES(mutex)
     ofpbuf_set_l3(pkt, ofpbuf_put(pkt, bpdu, bpdu_size));
 
     /* 802.2 header. */
-    memcpy(eth->eth_dst, eth_addr_rstp, ETH_ADDR_LEN);
+    memcpy(eth->eth_dst, eth_addr_stp, ETH_ADDR_LEN);
     /* p->rstp->send_bpdu() must fill in source address. */
     eth->eth_type = htons(ofpbuf_size(pkt) - ETH_HEADER_LEN);
 
