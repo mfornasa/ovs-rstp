@@ -1154,23 +1154,23 @@ int
 check_selected_role_change(struct rstp_port *p, int current_role_state)
 {
     if (p->selected && !p->updt_info && (p->role != p->selected_role) && (p->selected_role != current_role_state)) {
+        VLOG_DBG("%s, port %u: Entering case. current: %s role: %s selected: %d",
+                p->rstp->name, p->port_number, rstp_port_role_name(current_role_state),
+                rstp_port_role_name(p->role), p->selected_role);
         switch (p->selected_role) {
-            VLOG_DBG("%s, port %u: Entering case. current: %s role: %s selected: %d",
-                      p->rstp->name, p->port_number, rstp_port_role_name(current_role_state),
-                      rstp_port_role_name(p->role), p->selected_role);
-            case ROLE_ROOT:
+        case ROLE_ROOT:
             p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_ROOT_PORT_EXEC;
             return true;
-            case ROLE_DESIGNATED:
+        case ROLE_DESIGNATED:
             p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_DESIGNATED_PORT_EXEC;
             return true;
-            case ROLE_ALTERNATE:
+        case ROLE_ALTERNATE:
             p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_BLOCK_PORT_EXEC;
             return true;
-            case ROLE_BACKUP:
+        case ROLE_BACKUP:
             p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_BLOCK_PORT_EXEC;
             return true;
-            case ROLE_DISABLED:
+        case ROLE_DISABLED:
             p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_DISABLE_PORT_EXEC;
             return true;
         }
@@ -1228,7 +1228,7 @@ port_role_transition_sm(struct rstp_port *p)
     case PORT_ROLE_TRANSITION_SM_INIT_PORT_EXEC:
         p->role = ROLE_DISABLED;
         p->learn = p->forward = false;
-    p->synced = false;
+        p->synced = false;
         p->sync = p->re_root = true;
         p->rr_while = p->designated_times.forward_delay;
         p->fd_while = p->designated_times.max_age;
