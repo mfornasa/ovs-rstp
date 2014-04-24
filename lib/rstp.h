@@ -120,8 +120,8 @@ void rstp_unref(struct rstp *);
 
 /* Functions used outside RSTP, to call functions defined in
    rstp-state-machines.h */
-int rstp_tick_timers(struct rstp *);
-int rstp_received_bpdu(struct rstp_port *, const void *, size_t);
+void rstp_tick_timers(struct rstp *);
+void rstp_received_bpdu(struct rstp_port *, const void *, size_t);
 
 bool rstp_check_and_reset_fdb_flush(struct rstp *);
 bool rstp_get_changed_port(struct rstp *, struct rstp_port **);

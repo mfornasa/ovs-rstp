@@ -157,19 +157,17 @@ static void rstp_unixctl_tcn(struct unixctl_conn *, int argc,
 static int rstp_initialize_port(struct rstp_port *p);
 
 /* Decrements the State Machines' timers. */
-int
+void
 rstp_tick_timers(struct rstp *rstp)
 {
     decrease_rstp_port_timers(rstp);
-    return 0;
 }
 
 /* Processes an incoming BPDU. */
-int
+void
 rstp_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
 {
     process_received_bpdu(p, bpdu, bpdu_size);
-    return 0;
 }
 
 void
