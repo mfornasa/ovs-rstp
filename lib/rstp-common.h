@@ -332,7 +332,7 @@ struct rstp_port {
 
 
     /*************************************************************************
-     * The following variable are set by management actions on the bridge
+     * The following variables are set by management actions on the bridge
      ************************************************************************/
 
     /* Port number and priority 
@@ -350,7 +350,7 @@ struct rstp_port {
     uint32_t port_path_cost;
 
     /*************************************************************************
-     * The following variable are defined in [17.17 - State machine timers]
+     * The following variables are defined in [17.17 - State machine timers]
      ************************************************************************/
     /* [17.17.1 - edgeDelayWhile]
        The Edge Delay timer. The time remaining, in the absence of a received
@@ -398,7 +398,7 @@ struct rstp_port {
 
 
     /*************************************************************************
-     * The following variable are defined in [17.19 - Per-Port variables]
+     * The following variables are defined in [17.19 - Per-Port variables]
      ************************************************************************/
 
     /* [17.19.1 - ageingTime]
@@ -753,7 +753,7 @@ struct rstp {
 
 
     /*************************************************************************
-     * The following variable are defined in [17.18 - Per-Bridge variables]
+     * The following variables are defined in [17.18 - Per-Bridge variables]
      ************************************************************************/
 
     /* [17.18.1 - BEGIN]
