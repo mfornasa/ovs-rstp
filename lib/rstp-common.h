@@ -29,12 +29,12 @@
 #ifndef RSTP_COMMON_H
 #define RSTP_COMMON_H 1
 
+#include "rstp.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "packets.h"
-#include "ovs-atomic.h"
 #include "list.h"
-#include "rstp.h"
+#include "ovs-atomic.h"
+#include "packets.h"
 
 enum  rstp_force_protocol_version;
 

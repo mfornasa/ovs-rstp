@@ -28,21 +28,21 @@
  */
 
 #include <config.h>
-#include <sys/types.h>
-#include <netinet/in.h>
+#include "rstp.h"
+#include "rstp-state-machines.h"
 #include <arpa/inet.h>
 #include <inttypes.h>
+#include <netinet/in.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include "byte-order.h"
+#include "connectivity.h"
 #include "ofpbuf.h"
 #include "packets.h"
+#include "seq.h"
 #include "unixctl.h"
 #include "util.h"
 #include "vlog.h"
-#include "rstp.h"
-#include "rstp-state-machines.h"
-#include "seq.h"
-#include "connectivity.h"
 
 VLOG_DEFINE_THIS_MODULE(rstp_sm);
 
