@@ -40,17 +40,17 @@ enum portFlag {
 } portFlag_t;
 
 /* Per-Bridge State Machine */
-int port_role_selection_sm (struct rstp *);
+int port_role_selection_sm(struct rstp *);
 
 /* Per-Port State Machines */
 int port_receive_sm(struct rstp_port *);
 int port_protocol_migration_sm(struct rstp_port *);
-int bridge_detection_sm (struct rstp_port *);
-int port_transmit_sm (struct rstp_port *);
-int port_information_sm (struct rstp_port *);
-int port_role_transition_sm (struct rstp_port *);
-int port_state_transition_sm (struct rstp_port *);
-int topology_change_sm (struct rstp_port *);
+int bridge_detection_sm(struct rstp_port *);
+int port_transmit_sm(struct rstp_port *);
+int port_information_sm(struct rstp_port *);
+int port_role_transition_sm(struct rstp_port *);
+int port_state_transition_sm(struct rstp_port *);
+int topology_change_sm(struct rstp_port *);
 /* port_timers_sm() not defined as a state machine */
 
 /* Methods called by the Forwarding Layer, through functions of rstp.h. */

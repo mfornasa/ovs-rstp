@@ -313,7 +313,7 @@ set_selected_tree(struct rstp * r)
 }
 
 int
-port_role_selection_sm (struct rstp * r)
+port_role_selection_sm(struct rstp * r)
 {
     enum port_role_selection_state_machine old_state;
     int port_no;
@@ -433,7 +433,7 @@ port_receive_sm(struct rstp_port * p)
 
 /* [17.24 - Port Protocol Migration state machine] */
 int
-port_protocol_migration_sm (struct rstp_port * p)
+port_protocol_migration_sm(struct rstp_port * p)
 {
     enum port_protocol_migration_state_machine old_state;
     struct rstp * r;
@@ -496,7 +496,7 @@ port_protocol_migration_sm (struct rstp_port * p)
 
 /* [17.25 - Bridge Detection state machine] */
 int
-bridge_detection_sm (struct rstp_port * p)
+bridge_detection_sm(struct rstp_port * p)
 {
     enum bridge_detection_state_machine old_state;
     struct rstp * r;
@@ -762,7 +762,7 @@ tx_tcn(struct rstp_port * p)
 }
 
 int
-port_transmit_sm (struct rstp_port * p)
+port_transmit_sm(struct rstp_port * p)
 {
     enum port_transmit_state_machine old_state;
     struct rstp * r;
@@ -927,7 +927,7 @@ better_or_same_info(struct rstp_port * p, int new_info_is)
 }
 
 int
-port_information_sm (struct rstp_port * p)
+port_information_sm(struct rstp_port * p)
 {
     enum port_information_state_machine old_state;
     struct rstp * r;
@@ -1209,7 +1209,7 @@ all_synced(struct rstp * r)
 }
 
 int
-port_role_transition_sm (struct rstp_port * p)
+port_role_transition_sm(struct rstp_port * p)
 {
     enum port_role_transition_state_machine old_state;
     struct rstp * r;
@@ -1511,7 +1511,7 @@ disable_forwarding(struct rstp_port * p)
 }
 
 int
-port_state_transition_sm (struct rstp_port * p)
+port_state_transition_sm(struct rstp_port * p)
 {
     enum port_state_transition_state_machine old_state;
     struct rstp * r;
@@ -1614,7 +1614,7 @@ set_tc_prop_bridge(struct rstp_port * p)  /* not specified in 802.1D-2004. */
 }
 
 int
-topology_change_sm (struct rstp_port * p)
+topology_change_sm(struct rstp_port * p)
 {
     enum topology_change_state_machine old_state;
     struct rstp * r;
