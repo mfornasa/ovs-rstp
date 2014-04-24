@@ -78,9 +78,9 @@ int
 validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
 {
     /* Validation of received BPDU, see [9.3.4]. */
-    struct rstp_bpdu * temp;
+    const struct rstp_bpdu * temp;
     
-    temp = CONST_CAST(struct rstp_bpdu *, bpdu);
+    temp = bpdu;
     if (bpdu_size < 4 || temp->protocol_identifier != 0) {
         return -1;
     } else {
