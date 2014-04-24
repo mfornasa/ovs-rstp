@@ -92,7 +92,7 @@ validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
             else {
                 return -1;
             }
-        } else if (temp->bpdu_type == TOPOLOGY_CHANGE_NOTIFICATION) {
+        } else if (temp->bpdu_type == TOPOLOGY_CHANGE_NOTIFICATION_BPDU) {
             return 0;
         } else if (temp->bpdu_type == RAPID_SPANNING_TREE_BPDU && bpdu_size >= 36) {
             return 0;
@@ -357,7 +357,7 @@ updt_bpdu_version(struct rstp_port * p)  /* [17.21.22] */
 {
     switch (p->received_bpdu_buffer.bpdu_type) {
     case CONFIGURATION_BPDU:
-    case TOPOLOGY_CHANGE_NOTIFICATION:
+    case TOPOLOGY_CHANGE_NOTIFICATION_BPDU:
         p->rcvd_rstp = false;
         p->rcvd_stp = true;
         break;
@@ -575,7 +575,7 @@ set_tc_flags(struct rstp_port * p)
         }
     }
     /* Sets rcvd_tcn true if the BPDU is a TCN BPDU. */
-    if (p->received_bpdu_buffer.bpdu_type == TOPOLOGY_CHANGE_NOTIFICATION) {
+    if (p->received_bpdu_buffer.bpdu_type == TOPOLOGY_CHANGE_NOTIFICATION_BPDU) {
         p->rcvd_tcn = true;
     }
 }
@@ -725,7 +725,7 @@ tx_tcn(struct rstp_port * p)
 
     bpdu->protocol_identifier = htons(0);
     bpdu->protocol_version_identifier = 0;
-    bpdu->bpdu_type = TOPOLOGY_CHANGE_NOTIFICATION;
+    bpdu->bpdu_type = TOPOLOGY_CHANGE_NOTIFICATION_BPDU;
     rstp_send_bpdu(p, bpdu, sizeof(struct rstp_bpdu));
 }
 

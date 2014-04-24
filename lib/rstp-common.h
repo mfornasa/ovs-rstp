@@ -229,7 +229,7 @@ struct rstp_priority_vector4 {
 
 enum rstp_bpdu_type {
     CONFIGURATION_BPDU = 0x0,
-    TOPOLOGY_CHANGE_NOTIFICATION = 0x80,
+    TOPOLOGY_CHANGE_NOTIFICATION_BPDU = 0x80,
     RAPID_SPANNING_TREE_BPDU = 0x2
 } bpdu_type_t;
 
