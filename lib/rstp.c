@@ -289,8 +289,8 @@ rstp_set_bridge_priority(struct rstp *rstp, int new_priority)
     struct rstp_port *p;
     
     if (new_priority >= RSTP_MIN_PRIORITY && new_priority <= RSTP_MAX_PRIORITY) {
-        ovs_mutex_lock(&mutex);
         VLOG_DBG("%s: set bridge priority to %d", rstp->name, (new_priority/4096)*4096);
+        ovs_mutex_lock(&mutex);
         rstp->priority = (new_priority/4096)*4096;
         rstp->bridge_identifier[0] = (new_priority/4096)<<4;
         set_bridge_priority__(rstp);
@@ -311,8 +311,8 @@ void
 rstp_set_bridge_ageing_time(struct rstp *rstp, int new_ageing_time)
 {
     if (new_ageing_time >= RSTP_MIN_AGEING_TIME && new_ageing_time <= RSTP_MAX_AGEING_TIME) {
-        ovs_mutex_lock(&mutex);
         VLOG_DBG("%s: set ageing time to %d", rstp->name, new_ageing_time);
+        ovs_mutex_lock(&mutex);
         rstp->ageing_time = new_ageing_time;
         ovs_mutex_unlock(&mutex);
     }
