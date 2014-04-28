@@ -2214,7 +2214,7 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
                     xlate_report(ctx, "STP not in listening state, "
                             "skipping bpdu output");
                 } else if (ctx->xbridge->rstp != NULL) {
-                    xlate_report(ctx, "RSTP does not manage BPDU in this state, "
+                    xlate_report(ctx, "RSTP not managing BPDU in this state, "
                             "skipping bpdu output");
                 }
                 return;
@@ -3779,10 +3779,8 @@ xlate_actions(struct xlate_in *xin, struct xlate_out *xout)
 
             /* We've let OFPP_NORMAL and the learning action look at the
              * packet, so drop it now if forwarding is disabled. */
-            if (in_port && !xport_stp_forward_state(in_port)) {
-                ofpbuf_set_size(&ctx.xout->odp_actions, sample_actions_len);
-            }
-            else if (in_port && !xport_rstp_forward_state(in_port)) {
+            if (in_port && !xport_stp_forward_state(in_port) &&
+                !xport_rstp_forward_state(in_port)) {
                 ofpbuf_set_size(&ctx.xout->odp_actions, sample_actions_len);
             }
         }
