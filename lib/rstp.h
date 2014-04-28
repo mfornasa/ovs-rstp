@@ -125,39 +125,39 @@ void rstp_received_bpdu(struct rstp_port *, const void *, size_t);
 
 bool rstp_check_and_reset_fdb_flush(struct rstp *);
 bool rstp_get_changed_port(struct rstp *, struct rstp_port **);
-int rstp_port_set_mac_operational(struct rstp_port *,
+void rstp_port_set_mac_operational(struct rstp_port *,
                                   uint8_t new_mac_operational);
 uint8_t rstp_port_get_mac_operational(struct rstp_port *);
 
 /* Bridge setters */
-int rstp_set_bridge_address(struct rstp *, uint8_t []);
-int rstp_set_bridge_priority(struct rstp *, int new_priority);
-int rstp_set_bridge_ageing_time(struct rstp *, int new_ageing_time);
-int rstp_set_bridge_force_protocol_version(struct rstp *,
+void rstp_set_bridge_address(struct rstp *, uint8_t []);
+void rstp_set_bridge_priority(struct rstp *, int new_priority);
+void rstp_set_bridge_ageing_time(struct rstp *, int new_ageing_time);
+void rstp_set_bridge_force_protocol_version(struct rstp *,
                                             enum rstp_force_protocol_version new_force_protocol_version);
-int rstp_set_bridge_hello_time(struct rstp *);
-int rstp_set_bridge_max_age(struct rstp *, int new_max_age);
-int rstp_set_bridge_forward_delay(struct rstp *, int new_forward_delay);
-int rstp_set_bridge_transmit_hold_count(struct rstp *,
+void rstp_set_bridge_hello_time(struct rstp *);
+void rstp_set_bridge_max_age(struct rstp *, int new_max_age);
+void rstp_set_bridge_forward_delay(struct rstp *, int new_forward_delay);
+void rstp_set_bridge_transmit_hold_count(struct rstp *,
                                         int new_transmit_hold_count);
-int rstp_set_bridge_migrate_time(struct rstp *);
-int rstp_set_bridge_times(struct rstp *, int new_forward_delay, int new_hello_time,
+void rstp_set_bridge_migrate_time(struct rstp *);
+void rstp_set_bridge_times(struct rstp *, int new_forward_delay, int new_hello_time,
                           int new_max_age, int new_message_age);
 
 /* Port setters */
-int rstp_port_set_priority(struct rstp_port *, int new_port_priority);
-int rstp_port_set_port_number(struct rstp_port *, uint16_t new_port_number);
+void rstp_port_set_priority(struct rstp_port *, int new_port_priority);
+void rstp_port_set_port_number(struct rstp_port *, uint16_t new_port_number);
 uint32_t rstp_convert_speed_to_cost(unsigned int speed);
-int rstp_port_set_path_cost(struct rstp_port *, uint32_t new_port_path_cost);
-int rstp_port_set_admin_edge(struct rstp_port *, bool new_admin_edge);
-int rstp_port_set_auto_edge(struct rstp_port *, bool new_auto_edge);
-int rstp_port_set_state(struct rstp_port *, enum rstp_state new_state);
-int rstp_port_enable(struct rstp_port *);
-int rstp_port_disable(struct rstp_port *);
-int rstp_port_set_aux(struct rstp_port *, void *aux);
-int rstp_port_set_administrative_bridge_port(struct rstp_port *, uint8_t);
-int rstp_port_set_oper_point_to_point_mac(struct rstp_port *, uint8_t);
-int rstp_port_set_mcheck(struct rstp_port *, bool new_mcheck);
+void rstp_port_set_path_cost(struct rstp_port *, uint32_t new_port_path_cost);
+void rstp_port_set_admin_edge(struct rstp_port *, bool new_admin_edge);
+void rstp_port_set_auto_edge(struct rstp_port *, bool new_auto_edge);
+void rstp_port_set_state(struct rstp_port *, enum rstp_state new_state);
+void rstp_port_enable(struct rstp_port *);
+void rstp_port_disable(struct rstp_port *);
+void rstp_port_set_aux(struct rstp_port *, void *aux);
+void rstp_port_set_administrative_bridge_port(struct rstp_port *, uint8_t);
+void rstp_port_set_oper_point_to_point_mac(struct rstp_port *, uint8_t);
+void rstp_port_set_mcheck(struct rstp_port *, bool new_mcheck);
 
 /* Bridge getters */
 const char * rstp_get_name(const struct rstp *);
