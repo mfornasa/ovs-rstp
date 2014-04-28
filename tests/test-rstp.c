@@ -101,15 +101,15 @@ new_bridge(struct test_case *tc, int id)
 {
     struct bridge *b = xmalloc(sizeof *b);
     char name[16];
-    uint8_t identifier[6];
+    uint8_t identifier[ETH_ADDR_LEN];
     int i;
-    for (i=0;i<6;i++){
+    for (i=0;i<ETH_ADDR_LEN;i++){
         identifier[i] = id;
     }
     b->tc = tc;
     b->id = id;
     snprintf(name, sizeof name, "rstp%x", id);
-    b->rstp = rstp_create(name, identifier+2, send_bpdu, b);
+    b->rstp = rstp_create(name, identifier, send_bpdu, b);
     assert(tc->n_bridges < ARRAY_SIZE(tc->bridges));
     b->n_ports = 0;
     b->rxq_head = b->rxq_tail = 0;

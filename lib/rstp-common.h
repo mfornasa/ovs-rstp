@@ -46,8 +46,8 @@ enum  rstp_force_protocol_version;
 #define LLC_SIZE 3
 #define ETH_SIZE 14
 struct ethernet_hdr {
-    unsigned char dhost[6];
-    unsigned char shost[6];
+    unsigned char dhost[ETH_ADDR_LEN];
+    unsigned char shost[ETH_ADDR_LEN];
     unsigned short length;
     unsigned char dsap;
     unsigned char ssap;

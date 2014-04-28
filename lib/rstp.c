@@ -239,7 +239,7 @@ set_bridge_priority__(struct rstp *rstp)
 
 /* Sets the bridge address. */
 int
-rstp_set_bridge_address(struct rstp *rstp, uint8_t bridge_address[6])
+rstp_set_bridge_address(struct rstp *rstp, uint8_t bridge_address[ETH_ADDR_LEN])
 {
     struct rstp_port *p;
     
