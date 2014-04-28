@@ -908,12 +908,12 @@ ofproto_port_get_stp_status(struct ofproto *ofproto, ofp_port_t ofp_port,
  * Returns 0 if successful, otherwise a positive errno value.*/
 int
 ofproto_port_get_stp_stats(struct ofproto *ofproto, ofp_port_t ofp_port,
-        struct ofproto_port_stp_stats *s)
+                            struct ofproto_port_stp_stats *s)
 {
     struct ofport *ofport = ofproto_get_port(ofproto, ofp_port);
     if (!ofport) {
         VLOG_WARN_RL(&rl, "%s: cannot get STP stats on nonexistent "
-                "port %"PRIu16, ofproto->name, ofp_port);
+                      "port %"PRIu16, ofproto->name, ofp_port);
         return ENODEV;
     }
 
@@ -930,7 +930,7 @@ ofproto_port_get_stp_stats(struct ofproto *ofproto, ofp_port_t ofp_port,
  * Returns 0 if successful, otherwise a positive errno value. */
 int
 ofproto_set_rstp(struct ofproto *ofproto,
-        const struct ofproto_rstp_settings *s)
+                 const struct ofproto_rstp_settings *s)
 {
     return (ofproto->ofproto_class->set_rstp
             ? ofproto->ofproto_class->set_rstp(ofproto, s)
@@ -944,7 +944,7 @@ ofproto_set_rstp(struct ofproto *ofproto,
  * Returns 0 if successful, otherwise a positive errno value. */
 int
 ofproto_get_rstp_status(struct ofproto *ofproto,
-        struct ofproto_rstp_status *s)
+                        struct ofproto_rstp_status *s)
 {
     return (ofproto->ofproto_class->get_rstp_status
             ? ofproto->ofproto_class->get_rstp_status(ofproto, s)
@@ -960,7 +960,7 @@ ofproto_get_rstp_status(struct ofproto *ofproto,
  * Returns 0 if successful, otherwise a positive errno value.*/
 int
 ofproto_port_set_rstp(struct ofproto *ofproto, ofp_port_t ofp_port,
-        const struct ofproto_port_rstp_settings *s)
+                      const struct ofproto_port_rstp_settings *s)
 {
     struct ofport *ofport = ofproto_get_port(ofproto, ofp_port);
     if (!ofport) {
@@ -981,7 +981,7 @@ ofproto_port_set_rstp(struct ofproto *ofproto, ofp_port_t ofp_port,
  * Returns 0 if successful, otherwise a positive errno value.*/
 int
 ofproto_port_get_rstp_status(struct ofproto *ofproto, ofp_port_t ofp_port,
-        struct ofproto_port_rstp_status *s)
+                             struct ofproto_port_rstp_status *s)
 {
     struct ofport *ofport = ofproto_get_port(ofproto, ofp_port);
     if (!ofport) {
