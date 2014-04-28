@@ -2173,14 +2173,9 @@ process_special(struct xlate_ctx *ctx, const struct flow *flow,
             lacp_process_packet(xport->xbundle->lacp, xport->ofport, packet);
         }
         return SLOW_LACP;
-    } else if (xbridge->stp && stp_should_process_flow(flow, wc)) {
+    } else if ((xbridge->stp || xbridge->rstp) && stp_should_process_flow(flow, wc)) {
         if (packet) {
-            stp_process_packet(xport, packet);
-        }
-        return SLOW_STP;
-    } else if (xbridge->rstp && stp_should_process_flow(flow, wc)) {
-        if (packet) {
-            rstp_process_packet(xport, packet);
+            xbridge->stp ? stp_process_packet(xport, packet) : rstp_process_packet(xport, packet);
         }
         return SLOW_STP;
     } else {
