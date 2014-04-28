@@ -1155,15 +1155,6 @@ xport_rstp_should_manage_bpdu(const struct xport *xport)
     return rstp_should_manage_bpdu(rp ? rstp_port_get_state(rp) : RSTP_DISABLED);
 }
 
-/* Returns true if RSTP should process 'flow'.  Sets fields in 'wc' that
- * were used to make the determination.*/
-static bool
-rstp_should_process_flow(const struct flow *flow, struct flow_wildcards *wc)
-{
-    memset(&wc->masks.dl_dst, 0xff, sizeof wc->masks.dl_dst);
-    return eth_addr_equals(flow->dl_dst, eth_addr_stp);
-}
-
 static void
 rstp_process_packet(const struct xport *xport, const struct ofpbuf *packet)
 {
@@ -2187,7 +2178,7 @@ process_special(struct xlate_ctx *ctx, const struct flow *flow,
             stp_process_packet(xport, packet);
         }
         return SLOW_STP;
-    } else if (xbridge->rstp && rstp_should_process_flow(flow, wc)) {
+    } else if (xbridge->rstp && stp_should_process_flow(flow, wc)) {
         if (packet) {
             rstp_process_packet(xport, packet);
         }
