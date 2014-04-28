@@ -435,7 +435,7 @@ rstp_set_bridge_forward_delay(struct rstp *rstp, int new_forward_delay)
 {
     if (new_forward_delay >= RSTP_MIN_BRIDGE_FORWARD_DELAY &&
             new_forward_delay <= RSTP_MAX_BRIDGE_FORWARD_DELAY) {
-        if (2*(new_forward_delay - 1) >= rstp->bridge_max_age) {
+        if (2 * (new_forward_delay - 1) >= rstp->bridge_max_age) {
             VLOG_DBG("%s: set RSTP Forward Delay to %d", rstp->name, new_forward_delay);
             ovs_mutex_lock(&mutex);
             rstp->bridge_forward_delay = new_forward_delay;
@@ -519,7 +519,7 @@ rstp_port_set_priority(struct rstp_port *rstp_port, int new_port_priority)
     if (new_port_priority >= RSTP_MIN_PORT_PRIORITY && new_port_priority  <= RSTP_MAX_PORT_PRIORITY) {
         VLOG_DBG("%s, port %u: set RSTP port priority to %d", rstp->name, rstp_port->port_number, new_port_priority);
         ovs_mutex_lock(&mutex);
-        new_port_priority = new_port_priority - new_port_priority%RSTP_STEP_PORT_PRIORITY; /* floor */
+        new_port_priority = new_port_priority - new_port_priority % RSTP_STEP_PORT_PRIORITY; /* floor */
         rstp_port->priority = new_port_priority;
         set_port_id__(rstp_port);
         rstp_port->selected = 0;
@@ -572,7 +572,6 @@ rstp_convert_speed_to_cost(unsigned int speed)
 {
     uint32_t value;
     
-    ovs_mutex_lock(&mutex);
     if (speed >= 10000000)
         value = 2; /* 10 Tb/s. */
     else if (speed >= 1000000)
@@ -591,7 +590,6 @@ rstp_convert_speed_to_cost(unsigned int speed)
         value = 20000000; /* 1 Mb/s. */
     else
         value = RSTP_DEFAULT_PORT_PATH_COST; /* 100 Mb/s. */
-    ovs_mutex_unlock(&mutex);
     return value;
 }
 
