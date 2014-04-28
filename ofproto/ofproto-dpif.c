@@ -1744,7 +1744,6 @@ port_reconfigured(struct ofport *port_, enum ofputil_port_config old_config)
     struct ofport_dpif *port = ofport_dpif_cast(port_);
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(port->up.ofproto);
     enum ofputil_port_config changed = old_config ^ port->up.pp.config;
-     /* FIXME add OFPUTIL_PC_NO_RECV_RSTP? */
     if (changed & (OFPUTIL_PC_NO_RECV | OFPUTIL_PC_NO_RECV_STP |
                    OFPUTIL_PC_NO_FWD | OFPUTIL_PC_NO_FLOOD |
                    OFPUTIL_PC_NO_PACKET_IN)) {
@@ -2036,6 +2035,7 @@ update_rstp_port_state(struct ofport_dpif *ofport)
     if (ofport->rstp_state != state) {
         enum ofputil_port_state of_state;
         bool fwd_change;
+        
         VLOG_DBG_RL(&rl, "port %s: RSTP state changed from %s to %s",
                 netdev_get_name(ofport->up.netdev),
                 rstp_state_name(ofport->rstp_state),
@@ -2101,6 +2101,7 @@ static int
 set_stp(struct ofproto *ofproto_, const struct ofproto_stp_settings *s)
 {
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(ofproto_);
+    
     /* Only revalidate flows if the configuration changed. */
     if (!s != !ofproto->stp) {
         ofproto->backer->need_revalidate = REV_RECONFIGURE;
@@ -2124,6 +2125,7 @@ set_stp(struct ofproto *ofproto_, const struct ofproto_stp_settings *s)
         HMAP_FOR_EACH (ofport, hmap_node, &ofproto->up.ports) {
             set_stp_port(ofport, NULL);
         }
+
         stp_unref(ofproto->stp);
         ofproto->stp = NULL;
     }
@@ -2162,6 +2164,7 @@ update_stp_port_state(struct ofport_dpif *ofport)
     if (ofport->stp_state != state) {
         enum ofputil_port_state of_state;
         bool fwd_change;
+        
         VLOG_DBG_RL(&rl, "port %s: STP state changed from %s to %s",
                     netdev_get_name(ofport->up.netdev),
                     stp_state_name(ofport->stp_state),
@@ -2205,6 +2208,7 @@ set_stp_port(struct ofport *ofport_,
     struct ofport_dpif *ofport = ofport_dpif_cast(ofport_);
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(ofport->up.ofproto);
     struct stp_port *sp = ofport->stp_port;
+    
     if (!s || !s->enable) {
         if (sp) {
             ofport->stp_port = NULL;
@@ -2286,6 +2290,7 @@ stp_run(struct ofproto_dpif *ofproto)
         }
         while (stp_get_changed_port(ofproto->stp, &sp)) {
             struct ofport_dpif *ofport = stp_port_get_aux(sp);
+            
             if (ofport) {
                 update_stp_port_state(ofport);
             }
@@ -3061,13 +3066,8 @@ port_run(struct ofport_dpif *ofport)
     ofport->may_enable = enable;
 
     if (ofport->rstp_port) {
-        if (rstp_port_get_mac_operational(ofport->rstp_port) == false &&
-            enable == true) {
-            rstp_port_set_mac_operational(ofport->rstp_port, 1);
-        }
-        if (rstp_port_get_mac_operational(ofport->rstp_port) == true &&
-            enable == false) {
-            rstp_port_set_mac_operational(ofport->rstp_port, 0);
+        if (rstp_port_get_mac_operational(ofport->rstp_port) != enable) {
+            rstp_port_set_mac_operational(ofport->rstp_port, enable);
         }
     }
 }
