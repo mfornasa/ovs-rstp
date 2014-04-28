@@ -27,9 +27,9 @@
 #include "flow.h"
 #include "meta-flow.h"
 #include "netflow.h"
+#include "rstp.h"
 #include "sset.h"
 #include "stp.h"
-#include "rstp.h"
 
 #ifdef  __cplusplus
 extern "C" {

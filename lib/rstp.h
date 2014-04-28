@@ -51,7 +51,9 @@ struct ofpbuf;
 #define RSTP_STEP_PORT_PRIORITY 16
 #define RSTP_DEFAULT_PORT_PRIORITY 128
 
-/* Performance parameters defaults. [Table 7-5] and [Table 17-1] */
+/* Performance parameters defaults. [Table 7-5] and [Table 17-1] 
+ * These values are expressed in seconds.
+ */
 #define RSTP_DEFAULT_AGEING_TIME 300
 #define RSTP_MIN_AGEING_TIME 10
 #define RSTP_MAX_AGEING_TIME 1000000

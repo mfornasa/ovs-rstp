@@ -2191,7 +2191,7 @@ process_special(struct xlate_ctx *ctx, const struct flow *flow,
         if (packet) {
             rstp_process_packet(xport, packet);
         }
-        return SLOW_RSTP;
+        return SLOW_STP;
     } else {
         return 0;
     }

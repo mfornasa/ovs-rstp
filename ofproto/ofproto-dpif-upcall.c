@@ -680,7 +680,7 @@ compose_slow_path(struct udpif *udpif, struct xlate_out *xout,
     cookie.slow_path.unused = 0;
     cookie.slow_path.reason = xout->slow;
 
-    port = xout->slow & (SLOW_CFM | SLOW_BFD | SLOW_LACP | SLOW_STP | SLOW_RSTP)
+    port = xout->slow & (SLOW_CFM | SLOW_BFD | SLOW_LACP | SLOW_STP)
         ? ODPP_NONE
         : odp_in_port;
     pid = dpif_port_get_pid(udpif->dpif, port, flow_hash_5tuple(flow, 0));
@@ -849,7 +849,7 @@ handle_upcalls(struct handler *handler, struct upcall *upcalls,
 
     /* Handle the packets individually in order of arrival.
      *
-     *   - For SLOW_CFM, SLOW_LACP, SLOW_STP, SLOW_RSTP and SLOW_BFD,
+     *   - For SLOW_CFM, SLOW_LACP, SLOW_STP and SLOW_BFD,
      *     translation is what processes received packets for these protocols.
      *
      *   - For SLOW_CONTROLLER, translation sends the packet to the OpenFlow
