@@ -566,7 +566,7 @@ OVS_REQUIRES(mutex)
     llc->llc_dsap = RSTP_LLC_DSAP;
     llc->llc_ssap = RSTP_LLC_SSAP;
     llc->llc_cntl = RSTP_LLC_CNTL;
-    p->rstp->send_bpdu(pkt, rstp_port_no(p), p->rstp->aux);
+    p->rstp->send_bpdu(pkt, rstp_port_index(p), p->rstp->aux);
 }
 
 void

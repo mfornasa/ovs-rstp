@@ -618,7 +618,7 @@ test_rstp_main(int argc, char *argv[])
                                 } else {
                                     warn("%s: (port %d is the root port)",
                                             rstp_get_name(rstp),
-                                            rstp_port_no(root_port));
+                                            rstp_port_index(root_port));
                                 }
                             } else if (cost_value != root_path_cost) {
                                 warn("%s: root path cost is %d, should be %d",

@@ -640,7 +640,7 @@ type_run(const char *type)
                     ? stp_port_no(ofport->stp_port)
                     : -1;
                 int rstp_port = ofport->rstp_port
-                    ? rstp_port_no(ofport->rstp_port)
+                    ? rstp_port_index(ofport->rstp_port)
                     : -1;
                 xlate_ofport_set(ofproto, ofport->bundle, ofport,
                                  ofport->up.ofp_port, ofport->odp_port,
@@ -2325,7 +2325,7 @@ set_rstp_port(struct ofport *ofport_,
             update_rstp_port_state(ofport);
         }
         return 0;
-    } else if ( rp && rstp_port_no(rp) != s->port_num
+    } else if ( rp && rstp_port_index(rp) != s->port_num
                   && ofport == rstp_port_get_aux(rp)) {
         /* The port-id changed, so disable the old one if it's not
          * already in use by another port. */

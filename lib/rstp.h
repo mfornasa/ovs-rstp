@@ -172,7 +172,7 @@ uint8_t * rstp_get_designated_root(const struct rstp *);
 bool rstp_is_root_bridge(const struct rstp *);
 
 /* Port getters */
-int rstp_port_no(const struct rstp_port *);
+int rstp_port_index(const struct rstp_port *);
 struct rstp_port *rstp_get_port(struct rstp *, int port_no);
 uint8_t * rstp_port_get_id(const struct rstp_port *);
 enum rstp_state rstp_port_get_state(const struct rstp_port *);

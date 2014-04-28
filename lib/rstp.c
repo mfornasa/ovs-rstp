@@ -139,7 +139,7 @@ rstp_unref(struct rstp *rstp)
 
 /* Returns the port index in the port array.  */
 int
-rstp_port_no(const struct rstp_port *p)
+rstp_port_index(const struct rstp_port *p)
 {
     struct rstp *rstp;
     int index;
@@ -814,7 +814,7 @@ OVS_REQUIRES(mutex)
     rstp_port_set_oper_point_to_point_mac(p, 1);
     rstp_port_set_path_cost(p, RSTP_DEFAULT_PORT_PATH_COST);
     rstp_port_set_priority(p, RSTP_DEFAULT_PORT_PRIORITY);
-    rstp_port_set_port_number(p, rstp_port_no(p) + 1);
+    rstp_port_set_port_number(p, rstp_port_index(p) + 1);
     rstp_port_set_path_cost(p, RSTP_DEFAULT_PORT_PATH_COST);
     rstp_port_set_auto_edge(p, true);
 
