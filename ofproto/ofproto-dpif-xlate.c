@@ -2185,7 +2185,7 @@ process_special(struct xlate_ctx *ctx, const struct flow *flow,
 
 static void
 compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
-                        bool check_stp, bool check_rstp)
+                        bool check_stp)
 {
     const struct xport *xport = get_ofp_port(ctx->xbridge, ofp_port);
     struct flow_wildcards *wc = &ctx->xout->wc;
@@ -2206,19 +2206,27 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
     } else if (xport->config & OFPUTIL_PC_NO_FWD) {
         xlate_report(ctx, "OFPPC_NO_FWD set, skipping output");
         return;
-    } else if (check_stp && check_rstp) {
+    } else if (check_stp) {
         if (is_stp(&ctx->base_flow)) {
-            if (!xport_stp_listen_state(xport) &&
-                    !xport_rstp_should_manage_bpdu(xport)) {
-                xlate_report(ctx, "STP not in listening state, "
-                             "RSTP does not manage BPDU in this state, "
-                             "skipping bpdu output");
+            if (!xport_stp_listen_state(xport) && 
+                 !xport_rstp_should_manage_bpdu(xport)) {
+                if (ctx->xbridge->stp != NULL) {
+                    xlate_report(ctx, "STP not in listening state, "
+                            "skipping bpdu output");
+                } else if (ctx->xbridge->rstp != NULL) {
+                    xlate_report(ctx, "RSTP does not manage BPDU in this state, "
+                            "skipping bpdu output");
+                }
                 return;
-            } else if (!xport_stp_forward_state(xport) &&
-                       !xport_rstp_forward_state(xport)) {
-                xlate_report(ctx, "STP not in forwarding state, "
-                        "RSTP not in forwarding state, "
-                        "skipping output");
+            } else if (!xport_stp_forward_state(xport) && 
+                        !xport_rstp_forward_state(xport)) {
+                if (ctx->xbridge->stp != NULL) {
+                        xlate_report(ctx, "STP not in forwarding state, "
+                            "skipping output");
+                } else if (ctx->xbridge->rstp != NULL) {
+                    xlate_report(ctx, "RSTP not in forwarding state, "
+                            "skipping output");
+                }
                 return;
             }
         }
@@ -2376,7 +2384,7 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
 static void
 compose_output_action(struct xlate_ctx *ctx, ofp_port_t ofp_port)
 {
-    compose_output_action__(ctx, ofp_port, true, true);
+    compose_output_action__(ctx, ofp_port, true);
 }
 
 static void
@@ -2693,7 +2701,7 @@ flood_packets(struct xlate_ctx *ctx, bool all)
         }
 
         if (all) {
-            compose_output_action__(ctx, xport->ofp_port, false, false);
+            compose_output_action__(ctx, xport->ofp_port, false);
         } else if (!(xport->config & OFPUTIL_PC_NO_FLOOD)) {
             compose_output_action(ctx, xport->ofp_port);
         }
