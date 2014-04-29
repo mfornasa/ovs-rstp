@@ -694,26 +694,24 @@ update_port_enabled__(struct rstp_port *p)
 
 /* Sets the port MAC_Operational parameter [6.4.2]. */
 void
-rstp_port_set_mac_operational(struct rstp_port *p, uint8_t new_mac_operational)
+rstp_port_set_mac_operational(struct rstp_port *p, bool new_mac_operational)
 {
     struct rstp *rstp;
-    
-    if (new_mac_operational == 0 || new_mac_operational == 1) {
-        ovs_mutex_lock(&mutex);
-        rstp = p->rstp;
-        p->mac_operational = new_mac_operational;
-        update_port_enabled__(p);
-        rstp->changes = true;
-        move_rstp(rstp);
-        ovs_mutex_unlock(&mutex);
-    }
+
+    ovs_mutex_lock(&mutex);
+    rstp = p->rstp;
+    p->mac_operational = new_mac_operational;
+    update_port_enabled__(p);
+    rstp->changes = true;
+    move_rstp(rstp);
+    ovs_mutex_unlock(&mutex);
 }
 
 /* Gets the port MAC_Operational parameter [6.4.2]. */
-uint8_t
+bool
 rstp_port_get_mac_operational(struct rstp_port *p)
 {
-    uint8_t value;
+    bool value;
     
     ovs_mutex_lock(&mutex);
     value = p->mac_operational;
@@ -1061,12 +1059,8 @@ rstp_port_get_aux(struct rstp_port *p)
  bool
  rstp_should_manage_bpdu(enum rstp_state state)
  {
-     if (state == RSTP_DISCARDING || state == RSTP_LEARNING ||
-         state == RSTP_FORWARDING) {
-         return true;
-     } else {
-         return false;
-     }
+     return (state == RSTP_DISCARDING || state == RSTP_LEARNING ||
+         state == RSTP_FORWARDING);
  }
 
 /* Returns true if 'state' is one in which packets received on a port should

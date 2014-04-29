@@ -128,8 +128,8 @@ void rstp_received_bpdu(struct rstp_port *, const void *, size_t);
 bool rstp_check_and_reset_fdb_flush(struct rstp *);
 bool rstp_get_changed_port(struct rstp *, struct rstp_port **);
 void rstp_port_set_mac_operational(struct rstp_port *,
-                                  uint8_t new_mac_operational);
-uint8_t rstp_port_get_mac_operational(struct rstp_port *);
+                                   bool  new_mac_operational);
+bool rstp_port_get_mac_operational(struct rstp_port *);
 
 /* Bridge setters */
 void rstp_set_bridge_address(struct rstp *, uint8_t []);

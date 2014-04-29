@@ -171,7 +171,7 @@ new_port(struct bridge *b, struct lan *lan, uint32_t path_cost)
     assert(port_no < ARRAY_SIZE(b->ports));
     b->ports[port_no] = NULL;
     rstp_port_set_path_cost(p, path_cost);
-    rstp_port_set_mac_operational(p, 1);
+    rstp_port_set_mac_operational(p, true);
     rstp_port_enable(p);
     reconnect_port(b, port_no, lan);
 }
@@ -509,7 +509,7 @@ test_rstp_main(int argc, char *argv[])
                         path_cost = match(":") ? must_get_int() : RSTP_DEFAULT_PORT_PATH_COST;
                         if (port_no < bridge->n_ports) {
                             rstp_port_set_path_cost(p, path_cost);
-                            rstp_port_set_mac_operational(p, 1);
+                            rstp_port_set_mac_operational(p, true);
                             rstp_port_enable(p);
                             reconnect_port(bridge, port_no, lan);
                         } else if (port_no == bridge->n_ports) {
