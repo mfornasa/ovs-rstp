@@ -675,7 +675,7 @@ tx_config(struct rstp_port *p)
 {
     struct rstp_bpdu bpdu;
     
-    memset(&bpdu , 0, sizeof(struct rstp_bpdu));
+    memset(&bpdu, 0, sizeof(struct rstp_bpdu));
 
     bpdu.protocol_identifier = htons(0);
     bpdu.protocol_version_identifier = 0;
@@ -700,7 +700,7 @@ tx_rstp(struct rstp_port *p)
 {
     struct rstp_bpdu bpdu;
 
-    memset(&bpdu , 0, sizeof(struct rstp_bpdu));    
+    memset(&bpdu, 0, sizeof(struct rstp_bpdu));    
 
     bpdu.protocol_identifier = htons(0);
     bpdu.protocol_version_identifier = 2;
@@ -750,7 +750,7 @@ tx_tcn(struct rstp_port *p)
 {
     struct rstp_bpdu bpdu;
     
-    memset(&bpdu , 0, sizeof(struct rstp_bpdu));
+    memset(&bpdu, 0, sizeof(struct rstp_bpdu));
 
     bpdu.protocol_identifier = htons(0);
     bpdu.protocol_version_identifier = 0;

@@ -289,10 +289,10 @@ rstp_set_bridge_priority(struct rstp *rstp, int new_priority)
     struct rstp_port *p;
     
     if (new_priority >= RSTP_MIN_PRIORITY && new_priority <= RSTP_MAX_PRIORITY) {
-        VLOG_DBG("%s: set bridge priority to %d", rstp->name, (new_priority/4096)*4096);
+        VLOG_DBG("%s: set bridge priority to %d", rstp->name, (new_priority / 4096) * 4096);
         ovs_mutex_lock(&mutex);
-        rstp->priority = (new_priority/4096)*4096;
-        rstp->bridge_identifier[0] = (new_priority/4096)<<4;
+        rstp->priority = (new_priority / 4096) * 4096;
+        rstp->bridge_identifier[0] = (new_priority / 4096) << 4;
         set_bridge_priority__(rstp);
 
         /* [17.13] */
@@ -324,7 +324,7 @@ void
 reinitialize_rstp__(struct rstp *rstp)
 {
     char *name;
-    uint8_t *bridge_address;
+    uint8_t bridge_address[ETH_ADDR_LEN];
     void *send_bpdu;
     void *aux;
     struct ovs_refcount ref_count;
@@ -333,15 +333,13 @@ reinitialize_rstp__(struct rstp *rstp)
     
     /* Copy name, bridge_address, ref_cnt, send_bpdu, aux, node */
     name = xstrdup(rstp->name);
-    bridge_address = malloc(sizeof(rstp->address));
-    memcpy(bridge_address, rstp->address, sizeof(rstp->address));
+    memcpy(&bridge_address, rstp->address, sizeof(rstp->address));
     memcpy(&ref_count, &rstp->ref_cnt, sizeof(struct ovs_refcount));
     send_bpdu = rstp->send_bpdu;
     aux = rstp->aux;
     node = rstp->node;
     /* stop and clear rstp */
-    rstp->changes = false;
-    bzero(rstp, sizeof(struct rstp));
+    memset(rstp, 0, sizeof(struct rstp));
 
     /* Initialize rstp. */
     rstp->name = xstrdup(name);
@@ -836,7 +834,7 @@ rstp_port_disable(struct rstp_port *p)
     rstp = p->rstp;
     if (p->rstp_state != RSTP_DISABLED) {
         VLOG_DBG("%s: disabling RSPT port %u", rstp->name, p->port_number);
-        bzero(p, sizeof(struct rstp_port));
+        memset(p, 0, sizeof(struct rstp_port));
         p->rstp = rstp;
         rstp_initialize_port(p);
         rstp_port_set_state(p, RSTP_DISABLED);
