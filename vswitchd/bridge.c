@@ -2367,7 +2367,6 @@ port_refresh_stp_stats(struct port *port)
 static void
 br_refresh_rstp_status(struct bridge *br)
 {
-    char *temp;
     struct smap smap = SMAP_INITIALIZER(&smap);
     struct ofproto *ofproto = br->ofproto;
     struct ofproto_rstp_status status;
@@ -2379,23 +2378,23 @@ br_refresh_rstp_status(struct bridge *br)
         ovsrec_bridge_set_rstp_status(br->cfg, NULL);
         return;
     }
-    temp = get_id_string_from_uint8_t(status.bridge_id, 8);
-    smap_add_format(&smap, "rstp_bridge_id", "%s", temp);
+    smap_add_format(&smap, "rstp_bridge_id", "%s",
+                    get_id_string_from_uint8_t(status.bridge_id, 8));
 
-    temp = get_id_string_from_uint8_t(status.root_path_cost, 4);
-    smap_add_format(&smap, "rstp_root_path_cost", "%s", temp);
+    smap_add_format(&smap, "rstp_root_path_cost", "%s",
+                    get_id_string_from_uint8_t(status.root_path_cost, 4));
 
-    temp = get_id_string_from_uint8_t(status.root_id, 8);
-    smap_add_format(&smap, "rstp_root_id", "%s", temp);
+    smap_add_format(&smap, "rstp_root_id", "%s",
+                    get_id_string_from_uint8_t(status.root_id, 8));
 
-    temp = get_id_string_from_uint8_t(status.designated_id, 8);
-    smap_add_format(&smap, "rstp_designated_id", "%s", temp);
+    smap_add_format(&smap, "rstp_designated_id", "%s",
+                    get_id_string_from_uint8_t(status.designated_id, 8));
 
-    temp = get_id_string_from_uint8_t(status.designated_port_id, 2);
-    smap_add_format(&smap, "rstp_designated_port_id", "%s", temp);
+    smap_add_format(&smap, "rstp_designated_port_id", "%s",
+                    get_id_string_from_uint8_t(status.designated_port_id, 2));
 
-    temp = get_id_string_from_uint8_t(status.bridge_port_id, 2);
-        smap_add_format(&smap, "rstp_bridge_port_id", "%s", temp);
+    smap_add_format(&smap, "rstp_bridge_port_id", "%s",
+                    get_id_string_from_uint8_t(status.bridge_port_id, 2));
 
     ovsrec_bridge_set_rstp_status(br->cfg, &smap);
     smap_destroy(&smap);
@@ -2410,7 +2409,6 @@ port_refresh_rstp_status(struct port *port)
     char *keys[3];
     int64_t int_values[3];
     struct smap smap;
-    char *temp;
 
     if (port_is_synthetic(port)) {
         return;
@@ -2435,12 +2433,12 @@ port_refresh_rstp_status(struct port *port)
     /* Set Status column. */
     smap_init(&smap);
 
-    temp = get_id_string_from_uint8_t(status.port_id, 2);
-    smap_add_format(&smap, "rstp_port_id", "%s", temp);
-    temp =  rstp_port_role_name(status.role);
-    smap_add_format(&smap, "rstp_port_role", "%s", temp);
-    temp = rstp_state_name(status.state);
-    smap_add_format(&smap, "rstp_port_state", "%s", temp);
+    smap_add_format(&smap, "rstp_port_id", "%s",
+                    get_id_string_from_uint8_t(status.port_id, 2));
+    smap_add_format(&smap, "rstp_port_role", "%s",
+                    rstp_port_role_name(status.role));
+    smap_add_format(&smap, "rstp_port_state", "%s",
+                    rstp_state_name(status.state));
 
     ovsrec_port_set_rstp_status(port->cfg, &smap);
     smap_destroy(&smap);

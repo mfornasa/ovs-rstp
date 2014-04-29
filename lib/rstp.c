@@ -76,7 +76,7 @@ get_id_string_from_uint8_t(uint8_t *m, int length)
     }
 }
 
-char *
+const char *
 rstp_state_name(enum rstp_state state)
 {
     switch (state) {
@@ -93,7 +93,7 @@ rstp_state_name(enum rstp_state state)
     }
 }
 
-char *
+const char *
 rstp_port_role_name(enum rstp_port_role role)
 {
     switch (role) {
