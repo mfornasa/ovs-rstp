@@ -38,22 +38,6 @@
 
 enum  rstp_force_protocol_version;
 
-#define RSTP_LLC_DSAP 0x42
-#define RSTP_LLC_SSAP 0x42
-#define RSTP_LLC_CNTL 0x03
-
-/* Ethernet 802/803 header. */
-#define LLC_SIZE 3
-#define ETH_SIZE 14
-struct ethernet_hdr {
-    unsigned char dhost[ETH_ADDR_LEN];
-    unsigned char shost[ETH_ADDR_LEN];
-    unsigned short length;
-    unsigned char dsap;
-    unsigned char ssap;
-    unsigned char cntrl;
-};
-
 enum admin_port_state {
     RSTP_ADMIN_BRIDGE_PORT_STATE_DISABLED = 0,
     RSTP_ADMIN_BRIDGE_PORT_STATE_ENABLED = 1
