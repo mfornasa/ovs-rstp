@@ -517,7 +517,7 @@ bridge_detection_sm(struct rstp_port *p)
         p->bridge_detection_sm_state = BRIDGE_DETECTION_SM_EDGE;
         /* no break */
     case BRIDGE_DETECTION_SM_EDGE:
-        if ((!p->port_enabled && !p->admin_edge)||!p->oper_edge) {
+        if ((!p->port_enabled && !p->admin_edge) || !p->oper_edge) {
             p->bridge_detection_sm_state = BRIDGE_DETECTION_SM_NOT_EDGE_EXEC;
         }
         break;
@@ -526,7 +526,7 @@ bridge_detection_sm(struct rstp_port *p)
         p->bridge_detection_sm_state = BRIDGE_DETECTION_SM_NOT_EDGE;
         /* no break */
     case BRIDGE_DETECTION_SM_NOT_EDGE:
-        if ((!p->port_enabled && p->admin_edge)|| ((p->edge_delay_while == 0)&& p->auto_edge && p->send_rstp && p->proposing)) {
+        if ((!p->port_enabled && p->admin_edge) || ((p->edge_delay_while == 0) && p->auto_edge && p->send_rstp && p->proposing)) {
             p->bridge_detection_sm_state = BRIDGE_DETECTION_SM_EDGE_EXEC;
         }
         break;
@@ -575,7 +575,7 @@ record_agreement(struct rstp_port *p)
     struct rstp *r;
     
     r = p->rstp;
-    if (r->rstp_version && p->oper_point_to_point_mac && ((p->received_bpdu_buffer.flags & BPDU_FLAG_AGREEMENT) != 0)) {
+    if (r->rstp_version && p->oper_point_to_point_mac && ((p->received_bpdu_buffer.flags & BPDU_FLAG_AGREEMENT))) {
         p->agreed = true;
         p->proposing = false;
     } else {
@@ -616,7 +616,7 @@ record_dispute(struct rstp_port *p)
 void
 record_proposal(struct rstp_port *p)
 {
-    unsigned int role = ((p->received_bpdu_buffer.flags)&0xC)>>2;
+    unsigned int role = ((p->received_bpdu_buffer.flags) & 0xC) >> 2;
     if ((role == PORT_DES) && ((p->received_bpdu_buffer.flags & BPDU_FLAG_PROPOSAL) != 0)) {
         p->proposed = true;
     }
@@ -673,55 +673,53 @@ time_decode(uint8_t *encoded)
 void
 tx_config(struct rstp_port *p)
 {
-    struct rstp_bpdu *bpdu;
+    struct rstp_bpdu bpdu;
     
-    bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
-    bzero(bpdu, sizeof(struct rstp_bpdu));
+    memset(&bpdu , 0, sizeof(struct rstp_bpdu));
 
-    bpdu->protocol_identifier = htons(0);
-    bpdu->protocol_version_identifier = 0;
-    bpdu->bpdu_type = CONFIGURATION_BPDU;
-    memcpy(&bpdu->priority_vector, &p->designated_priority_vector, sizeof(struct rstp_priority_vector4));
-    time_encode(p->designated_times.message_age, bpdu->message_age);
-    time_encode(p->designated_times.max_age, bpdu->max_age);
-    time_encode(p->designated_times.hello_time, bpdu->hello_time);
-    time_encode(p->designated_times.forward_delay, bpdu->forward_delay);
+    bpdu.protocol_identifier = htons(0);
+    bpdu.protocol_version_identifier = 0;
+    bpdu.bpdu_type = CONFIGURATION_BPDU;
+    memcpy(&bpdu.priority_vector, &p->designated_priority_vector, sizeof(struct rstp_priority_vector4));
+    time_encode(p->designated_times.message_age, bpdu.message_age);
+    time_encode(p->designated_times.max_age, bpdu.max_age);
+    time_encode(p->designated_times.hello_time, bpdu.hello_time);
+    time_encode(p->designated_times.forward_delay, bpdu.forward_delay);
     if (p->tc_while !=0) {
-        bpdu->flags |= BPDU_FLAG_TOPCHANGE;
+        bpdu.flags |= BPDU_FLAG_TOPCHANGE;
     }
     if (p->tc_ack !=0) {
-        bpdu->flags |= BPDU_FLAG_TOPCHANGEACK;
+        bpdu.flags |= BPDU_FLAG_TOPCHANGEACK;
     }
-    rstp_send_bpdu(p, bpdu, sizeof(struct rstp_bpdu));
+    rstp_send_bpdu(p, &bpdu, sizeof(struct rstp_bpdu));
 }
 
 /* [17.21.20] */
 void
 tx_rstp(struct rstp_port *p)
 {
-    struct rstp_bpdu *bpdu;
-    
-    bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
-    bzero(bpdu, sizeof(struct rstp_bpdu));
+    struct rstp_bpdu bpdu;
 
-    bpdu->protocol_identifier = htons(0);
-    bpdu->protocol_version_identifier = 2;
-    bpdu->bpdu_type = RAPID_SPANNING_TREE_BPDU;
-    memcpy(&bpdu->priority_vector, &p->designated_priority_vector, sizeof(struct rstp_priority_vector4));
-    time_encode(p->designated_times.message_age, bpdu->message_age);
-    time_encode(p->designated_times.max_age, bpdu->max_age);
-    time_encode(p->designated_times.hello_time, bpdu->hello_time);
-    time_encode(p->designated_times.forward_delay, bpdu->forward_delay);
+    memset(&bpdu , 0, sizeof(struct rstp_bpdu));    
+
+    bpdu.protocol_identifier = htons(0);
+    bpdu.protocol_version_identifier = 2;
+    bpdu.bpdu_type = RAPID_SPANNING_TREE_BPDU;
+    memcpy(&bpdu.priority_vector, &p->designated_priority_vector, sizeof(struct rstp_priority_vector4));
+    time_encode(p->designated_times.message_age, bpdu.message_age);
+    time_encode(p->designated_times.max_age, bpdu.max_age);
+    time_encode(p->designated_times.hello_time, bpdu.hello_time);
+    time_encode(p->designated_times.forward_delay, bpdu.forward_delay);
     switch (p->role) {
     case ROLE_ROOT:
-        bpdu->flags = PORT_ROOT<<2;
+        bpdu.flags = PORT_ROOT<<2;
         break;
     case ROLE_DESIGNATED:
-        bpdu->flags = PORT_DES<<2;
+        bpdu.flags = PORT_DES<<2;
         break;
     case ROLE_ALTERNATE:
     case ROLE_BACKUP:
-        bpdu->flags = PORT_ALT_BACK<<2;
+        bpdu.flags = PORT_ALT_BACK<<2;
         break;
     case ROLE_DISABLED:
         /* should not happen! */
@@ -729,36 +727,35 @@ tx_rstp(struct rstp_port *p)
         break;
     }
     if (p->agree) {
-        bpdu->flags |= BPDU_FLAG_AGREEMENT;
+        bpdu.flags |= BPDU_FLAG_AGREEMENT;
     }
     if (p->proposing) {
-        bpdu->flags |= BPDU_FLAG_PROPOSAL;
+        bpdu.flags |= BPDU_FLAG_PROPOSAL;
     }
     if (p->tc_while !=0) {
-        bpdu->flags |= BPDU_FLAG_TOPCHANGE;
+        bpdu.flags |= BPDU_FLAG_TOPCHANGE;
     }
     if (p->learning) {
-        bpdu->flags |= BPDU_FLAG_LEARNING;
+        bpdu.flags |= BPDU_FLAG_LEARNING;
     }
     if (p->forwarding) {
-        bpdu->flags |= BPDU_FLAG_FORWARDING;
+        bpdu.flags |= BPDU_FLAG_FORWARDING;
     }
-    rstp_send_bpdu(p, bpdu, sizeof(struct rstp_bpdu));
+    rstp_send_bpdu(p, &bpdu, sizeof(struct rstp_bpdu));
 }
 
 /* [17.21.21] */
 void
 tx_tcn(struct rstp_port *p)
 {
-    struct rstp_bpdu *bpdu;
+    struct rstp_bpdu bpdu;
     
-    bpdu = (struct rstp_bpdu *) malloc(sizeof(struct rstp_bpdu));
-    bzero(bpdu, sizeof(struct rstp_bpdu));
+    memset(&bpdu , 0, sizeof(struct rstp_bpdu));
 
-    bpdu->protocol_identifier = htons(0);
-    bpdu->protocol_version_identifier = 0;
-    bpdu->bpdu_type = TOPOLOGY_CHANGE_NOTIFICATION_BPDU;
-    rstp_send_bpdu(p, bpdu, sizeof(struct rstp_bpdu));
+    bpdu.protocol_identifier = htons(0);
+    bpdu.protocol_version_identifier = 0;
+    bpdu.bpdu_type = TOPOLOGY_CHANGE_NOTIFICATION_BPDU;
+    rstp_send_bpdu(p, &bpdu, sizeof(struct rstp_bpdu));
 }
 
 int
