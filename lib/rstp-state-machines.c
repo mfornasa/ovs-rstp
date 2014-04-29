@@ -170,8 +170,8 @@ void decrease_rstp_port_timers(struct rstp *r)
 void
 decrement_timer(unsigned int *timer)
 {
-    if (*timer!=0) {
-        *timer = *timer - 1;
+    if (*timer != 0) {
+        *timer -= 1;
     }
 }
 
@@ -288,7 +288,7 @@ updt_roles_tree(struct rstp *r)
             }
             break;
         default:
-            ovs_assert(0);
+            OVS_NOT_REACHED();
             /* no break */
         }
     }
@@ -349,7 +349,7 @@ port_role_selection_sm(struct rstp *r)
         }
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != r->port_role_selection_sm_state) {
@@ -377,7 +377,7 @@ updt_bpdu_version(struct rstp_port *p)  /* [17.21.22] */
         p->rcvd_stp = false;
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
 }
@@ -421,7 +421,7 @@ port_receive_sm(struct rstp_port *p)
         }
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != p->port_receive_sm_state) {
@@ -483,7 +483,7 @@ port_protocol_migration_sm(struct rstp_port *p)
         }
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != p->port_protocol_migration_sm_state) {
@@ -531,7 +531,7 @@ bridge_detection_sm(struct rstp_port *p)
         }
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != p->bridge_detection_sm_state) {
@@ -725,7 +725,7 @@ tx_rstp(struct rstp_port *p)
         break;
     case ROLE_DISABLED:
         /* should not happen! */
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         break;
     }
     if (p->agree) {
@@ -842,7 +842,7 @@ port_transmit_sm(struct rstp_port *p)
         p->port_transmit_sm_state = PORT_TRANSMIT_SM_IDLE_EXEC;
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != p->port_transmit_sm_state) {
@@ -1021,7 +1021,7 @@ port_information_sm(struct rstp_port *p)
             p->port_information_sm_state = PORT_INFORMATION_SM_OTHER_EXEC;
             break;
         default:
-            ovs_assert(0);
+            OVS_NOT_REACHED();
             /* no break */
         }
         break;
@@ -1077,7 +1077,7 @@ port_information_sm(struct rstp_port *p)
         p->port_information_sm_state = PORT_INFORMATION_SM_CURRENT_EXEC;
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != p->port_information_sm_state) {
@@ -1453,7 +1453,7 @@ port_role_transition_sm(struct rstp_port *p)
         p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_ALTERNATE_PORT_EXEC;
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != p->port_role_transition_sm_state) {
@@ -1562,7 +1562,7 @@ port_state_transition_sm(struct rstp_port *p)
         }
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != p->port_state_transition_sm_state) {
@@ -1706,7 +1706,7 @@ topology_change_sm(struct rstp_port *p)
         p->topology_change_sm_state = TOPOLOGY_CHANGE_SM_ACTIVE;
         break;
     default:
-        ovs_assert(0);
+        OVS_NOT_REACHED();
         /* no break */
     }
     if (old_state != p->topology_change_sm_state) {
