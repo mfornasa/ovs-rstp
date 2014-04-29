@@ -205,10 +205,10 @@ struct rstp_priority_vector {
 };
 
 struct rstp_priority_vector4 {
-    unsigned char root_bridge_id[8];
-    unsigned char root_path_cost[4];
-    unsigned char designated_bridge_id[8];
-    unsigned char designated_port_id[2];
+    uint8_t root_bridge_id[8];
+    uint8_t root_path_cost[4];
+    uint8_t designated_bridge_id[8];
+    uint8_t designated_port_id[2];
 };
 
 enum rstp_bpdu_type {
@@ -775,7 +775,7 @@ struct rstp {
     /* [17.18.5 - rootPortId]
         The Port Identifier of the Root Port. This is the fifth component of
         the root priority vector, as defined in 17.6. */
-    unsigned char root_port_id[2];
+    uint8_t root_port_id[2];
 
     /* [17.18.7 - rootTimes]
        The rootTimes variable comprises the Bridge's operational timer parameter

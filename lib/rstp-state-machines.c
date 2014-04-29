@@ -241,7 +241,7 @@ updt_roles_tree(struct rstp *r)
         }
     }
     memcpy(&r->root_priority, &best_vector, sizeof(struct rstp_priority_vector));
-    memcpy(&r->root_port_id, &((unsigned char *)&best_vector)[sizeof(struct rstp_priority_vector4)], 2);
+    memcpy(&r->root_port_id, &((uint8_t *)&best_vector)[sizeof(struct rstp_priority_vector4)], 2);
     VLOG_DBG("%s: new Root is %s", r->name, get_id_string_from_uint8_t(r->root_priority.root_bridge_id, 8));
     /* Letters d) e) */
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
@@ -1739,8 +1739,8 @@ rstp_priority_vector_is_superior(struct rstp_priority_vector *v1, struct rstp_pr
         return SUPERIOR_ABSOLUTE;
     }
     else if ((memcmp(v1, v2, sizeof(struct rstp_priority_vector4)) > 0) &&
-            (memcmp(v1->designated_bridge_id, v2->designated_bridge_id, sizeof(unsigned char[8])) == 0) &&
-            (memcmp(v1->designated_port_id, v2->designated_port_id, sizeof (unsigned char[2])) == 0)) {
+            (memcmp(v1->designated_bridge_id, v2->designated_bridge_id, sizeof(uint8_t[8])) == 0) &&
+            (memcmp(v1->designated_port_id, v2->designated_port_id, sizeof (uint8_t[2])) == 0)) {
         return SUPERIOR_SAME_DES;
     }
     else if (memcmp(v1, v2, sizeof(struct rstp_priority_vector)) == 0) {
