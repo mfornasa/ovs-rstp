@@ -1071,11 +1071,7 @@ rstp_port_get_aux(struct rstp_port *p)
 bool
 rstp_forward_in_state(enum rstp_state state)
 {
-    if (state == RSTP_DISABLED || state == RSTP_FORWARDING) {
-        return true;
-    } else {
-        return false;
-    }
+    return (state == RSTP_DISABLED || state == RSTP_FORWARDING);
 }
 
 /* Returns true if 'state' is one in which MAC learning should be done on
@@ -1086,11 +1082,7 @@ rstp_forward_in_state(enum rstp_state state)
 bool
 rstp_learn_in_state(enum rstp_state state)
 {
-    if (state == RSTP_DISABLED || state == RSTP_LEARNING || state == RSTP_FORWARDING) {
-        return true;
-    } else {
-        return false;
-    }
+    return (state == RSTP_DISABLED || state == RSTP_LEARNING || state == RSTP_FORWARDING);
 }
 
 /* Unixctl. */
