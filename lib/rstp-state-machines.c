@@ -868,7 +868,7 @@ rcv_info(struct rstp_port *p)
 
     cp = rstp_priority_vector_is_superior(&p->msg_priority, &p->port_priority);
     ct = memcmp(&p->port_times, &p->msg_times, sizeof(struct rstp_times));
-    role = ((p->received_bpdu_buffer.flags)&0xC)>>2;
+    role = ((p->received_bpdu_buffer.flags) & 0xC) >> 2;
 
     /*Returns SuperiorDesignatedInfo if:
       a) The received message conveys a Designated Port Role, and
@@ -916,12 +916,8 @@ int
 better_or_same_info(struct rstp_port *p, int new_info_is)
 {
     /* >= SUPERIOR_ABSOLUTE means that the vector is better or the same. */
-    if ((new_info_is == RECEIVED && p->info_is == INFO_IS_RECEIVED && rstp_priority_vector_is_superior(&p->msg_priority, &p->port_priority) >= SUPERIOR_ABSOLUTE)
-            || (new_info_is == MINE && p->info_is == INFO_IS_MINE && rstp_priority_vector_is_superior(&p->designated_priority_vector, &p->port_priority) >= SUPERIOR_ABSOLUTE)) {
-        return true;
-    } else {
-        return false;
-    }
+    return ((new_info_is == RECEIVED && p->info_is == INFO_IS_RECEIVED && rstp_priority_vector_is_superior(&p->msg_priority, &p->port_priority) >= SUPERIOR_ABSOLUTE)
+            || (new_info_is == MINE && p->info_is == INFO_IS_MINE && rstp_priority_vector_is_superior(&p->designated_priority_vector, &p->port_priority) >= SUPERIOR_ABSOLUTE));
 }
 
 int
@@ -933,7 +929,7 @@ port_information_sm(struct rstp_port *p)
     old_state = p->port_information_sm_state;
     r = p->rstp;
 
-    if (!p->port_enabled && (p->info_is!=INFO_IS_DISABLED)) {
+    if (!p->port_enabled && (p->info_is != INFO_IS_DISABLED)) {
         p->port_information_sm_state = PORT_INFORMATION_SM_DISABLED_EXEC;
     }
     switch (p->port_information_sm_state) {
@@ -1258,7 +1254,7 @@ port_role_transition_sm(struct rstp_port *p)
             break;
         }
         if (p->selected && !p->updt_info &&
-            ((p->fd_while != p->designated_times.max_age)||p->sync||p->re_root||!p->synced)) {
+            ((p->fd_while != p->designated_times.max_age) || p->sync || p->re_root || !p->synced)) {
         p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_DISABLED_PORT_EXEC;
         }
         break;
@@ -1407,7 +1403,7 @@ port_role_transition_sm(struct rstp_port *p)
             break;
         }
         if (p->selected && !p->updt_info) {
-            if ((p->rb_while != (2*p->designated_times.hello_time)) && (p->role == ROLE_BACKUP)) {
+            if ((p->rb_while != (2 * p->designated_times.hello_time)) && (p->role == ROLE_BACKUP)) {
             p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_BACKUP_PORT_EXEC;
             }
             if ((p->fd_while != forward_delay(p)) || p->sync || p->re_root || !p->synced) {
