@@ -322,7 +322,6 @@ struct rstp_port {
     /* Port number and priority 
        >=1 (max 12 bits [9.2.7]) */
     uint16_t port_number; 
-    #define RSTP_MAX_PORT_NUMBER 0xFFF
 
     /* Port priority
        Range: 0-240 in steps of 16 (table 17-2) */

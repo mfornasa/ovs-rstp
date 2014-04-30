@@ -549,7 +549,7 @@ rstp_port_set_port_number(struct rstp_port *rstp_port, uint16_t new_port_number)
     struct rstp *rstp;
     
     rstp = rstp_port->rstp;
-    if (new_port_number >= 1 && new_port_number <= RSTP_MAX_PORT_NUMBER) {
+    if (new_port_number >= 1 && new_port_number <= RSTP_MAX_PORTS) {
         ovs_mutex_lock(&mutex);
         if (is_port_number_taken__(rstp_port->rstp,  new_port_number) != -1) {
             VLOG_DBG("%s: set new RSTP port number %d -> %d", rstp->name, rstp_port->port_number, new_port_number);
