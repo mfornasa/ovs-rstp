@@ -95,11 +95,11 @@ struct ofproto_rstp_status {
 struct ofproto_rstp_settings {
     rstp_identifier address;
     uint16_t priority;
-    unsigned int ageing_time;
+    uint32_t ageing_time;
     enum rstp_force_protocol_version force_protocol_version;
-    unsigned int bridge_forward_delay;
-    unsigned int bridge_max_age;
-    unsigned int transmit_hold_count;
+    uint16_t bridge_forward_delay;
+    uint16_t bridge_max_age;
+    uint16_t transmit_hold_count;
 };
 
 struct ofproto_port_rstp_status {
