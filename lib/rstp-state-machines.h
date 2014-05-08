@@ -32,12 +32,12 @@
 
 #include "rstp-common.h"
 
-enum portFlag {
+enum port_flag {
     PORT_UNKN = 0,
     PORT_ALT_BACK = 1,
     PORT_ROOT = 2,
     PORT_DES = 3
-} portFlag_t;
+};
 
 /* Per-Bridge State Machine */
 int port_role_selection_sm(struct rstp *);

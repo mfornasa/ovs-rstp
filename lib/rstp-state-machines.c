@@ -46,7 +46,7 @@
 
 VLOG_DEFINE_THIS_MODULE(rstp_sm);
 
-void decrement_timer(unsigned int *);
+void decrement_timer(uint16_t *);
 static void rstp_send_bpdu(struct rstp_port *, const void *, size_t)
     OVS_REQUIRES(mutex);
 
@@ -168,7 +168,7 @@ void decrease_rstp_port_timers(struct rstp *r)
 }
 
 void
-decrement_timer(unsigned int *timer)
+decrement_timer(uint16_t *timer)
 {
     if (*timer != 0) {
         *timer -= 1;
@@ -214,7 +214,7 @@ updt_roles_tree(struct rstp *r)
     /* Letters a) b) c) */
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         uint32_t old_root_path_cost;
-        unsigned int root_path_cost;
+        uint32_t root_path_cost;
         struct rstp_port *p = rstp_get_port(r, port_no);
         if (p->info_is !=INFO_IS_RECEIVED) {
             continue;
@@ -612,7 +612,7 @@ record_dispute(struct rstp_port *p)
 void
 record_proposal(struct rstp_port *p)
 {
-    unsigned int role = ((p->received_bpdu_buffer.flags) & 0xC) >> 2;
+    enum port_flag role = ((p->received_bpdu_buffer.flags) & 0xC) >> 2;
     if ((role == PORT_DES) && ((p->received_bpdu_buffer.flags & BPDU_FLAG_PROPOSAL) != 0)) {
         p->proposed = true;
     }
@@ -857,7 +857,7 @@ rcv_info(struct rstp_port *p)
 {
     enum vector_comparison cp;
     bool ct;
-    unsigned int role;
+    enum port_flag role;
 
     p->msg_priority.root_bridge_id = ntohll(p->received_bpdu_buffer.root_bridge_id);
     p->msg_priority.root_path_cost = ntohl(p->received_bpdu_buffer.root_path_cost);

@@ -341,17 +341,17 @@ struct rstp_port {
     /* [17.17.1 - edgeDelayWhile]
        The Edge Delay timer. The time remaining, in the absence of a received
        BPDU, before this port is identified as an operEdgePort. */
-    unsigned int edge_delay_while;
+    uint16_t edge_delay_while;
 
     /* [17.17.2 - fdWhile]
        The Forward Delay timer. Used to delay Port State transitions until
        other Bridges have received spanning tree information. */
-    unsigned int fd_while;
+    uint16_t fd_while;
 
     /* [17.17.3 - helloWhen]
        The Hello timer. Used to ensure that at least one BPDU is transmitted by
        a Designated Port in each HelloTime period. */
-    unsigned int hello_when;
+    uint16_t hello_when;
 
     /* [17.17.4 - mdelayWhile]
        The Migration Delay timer. Used by the Port Protocol Migration state
@@ -359,28 +359,28 @@ struct rstp_port {
        synchronize its migration state with this Port before the receipt of a
        BPDU can cause this Port to change the BPDU types it transmits.
        Initialized to MigrateTime (17.13.9). */
-    unsigned int mdelay_while;
+    uint16_t mdelay_while;
 
     /* [17.17.5 - rbWhile]
        The Recent Backup timer. Maintained at its initial value, twice HelloTime,
        while the Port is a Backup Port. */
-    unsigned int rb_while;
+    uint16_t rb_while;
 
     /* [17.17.6 - rcvdInfoWhile]
        The Received Info timer. The time remaining before the spanning tree
        information received by this Port
        [portPriority (17.19.21) and portTimes (17.19.22)] is aged out if not
        refreshed by the receipt of a further Configuration Message. */
-    unsigned int rcvd_info_while;
+    uint16_t rcvd_info_while;
 
     /* [17.17.7 - rrWhile]
        The Recent Root timer. */
-    unsigned int rr_while;
+    uint16_t rr_while;
 
     /* [17.17.8 - tcWhile]
        The Topology Change timer. TCN Messages are sent while this timer is
        running. */
-    unsigned int tc_while;
+    uint16_t tc_while;
 
 
     /*************************************************************************
@@ -395,7 +395,7 @@ struct rstp_port {
        and is changed to FwdDelay (17.20.6) for a period of FwdDelay after
        fdbFlush (17.19.7) is set by the topology change state machine if
        stpVersion (17.19.7) is TRUE. */
-    unsigned int ageing_time;
+    uint32_t ageing_time;
 
     /* [17.19.2 - agree]
        Set if synced is set for all other Ports. An RST BPDU with the Agreement
@@ -624,7 +624,7 @@ struct rstp_port {
        every BPDU transmission, and decremented used by the Port Timers state
        machine (17.22) once a second. Transmissions are delayed if txCount
        reaches TxHoldCount (17.13.12). */
-    unsigned int tx_count;
+    uint16_t tx_count;
 
     /* [17.19.45 - updtInfo]
        A boolean. Set by the Port Role Selection state machine (17.28, 17.21.25)
@@ -633,15 +633,15 @@ struct rstp_port {
     bool updt_info;
 
     /* Counter for RSTP received frames - for rstpd */
-    unsigned int rx_rstp_bpdu_cnt;
+    uint32_t rx_rstp_bpdu_cnt;
 
     /* Counter for bad RSTP received frames */
-    unsigned int error_count;
+    uint32_t error_count;
 
     /*14.8.2.1.3 Outputs
       a) Uptime count in seconds of the time elapsed since the Port was last
          reset or initialized. */
-    unsigned int uptime;
+    uint32_t uptime;
 
     enum rstp_state rstp_state;
     bool state_changed;
@@ -702,7 +702,7 @@ struct rstp {
 
     /* [17.13.2 - Ageing Time]
        The Ageing Time parameter for the Bridge (7.9.2, Table 7-5). */
-    unsigned int ageing_time;
+    uint32_t ageing_time;
 
     /* [17.13.4 - Force Protocol Version]
        The Force Protocol Version parameter for the Bridge (17.4, 14.8.1).
@@ -729,12 +729,12 @@ struct rstp {
        The initial value of the mdelayWhile and edgeDelayWhile timers (17.17.4,
        17.17.1), fixed for all RSTP implementations conforming to this
        specification (Table 17-1). */
-    unsigned int migrate_time;
+    uint16_t migrate_time;
 
     /* [17.13.12 - Transmit Hold Count]
        The Transmit Hold Count (Table 17-1) used by the Port Transmit state
        machine to limit transmission rate. */
-    unsigned int transmit_hold_count;
+    uint16_t transmit_hold_count;
 
 
 
