@@ -494,20 +494,8 @@ void
 set_port_id__(struct rstp_port *p) /* normally used when mutex is already locked */
 {
     struct rstp *rstp;
-    /*
-    uint16_t temp;
-    uint8_t *ptemp;
-    */
     rstp = p->rstp;
     /* [9.2.7] Port identifier. */
-    /*
-    temp = htons(p->port_number);
-    ptemp = (uint8_t *)&temp;
-
-    p->port_id[1] = ptemp[1];
-    p->port_id[0] = ptemp[0] | p->priority;
-    VLOG_DBG("%s: new RSTP port id %s", rstp->name, get_id_string_from_uint8_t(p->port_id, 2));
-    */
     p->port_id = p->port_number | (p->priority << 8); 
     VLOG_DBG("%s: new RSTP port id "RSTP_PORT_ID_FMT"", rstp->name, p->port_id);
 }
