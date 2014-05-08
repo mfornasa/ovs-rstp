@@ -1970,11 +1970,11 @@ set_rstp(struct ofproto *ofproto_, const struct ofproto_rstp_settings *s)
 
     if (s) {
         if (!ofproto->rstp) {
-            ofproto->rstp = rstp_create(ofproto_->name, (uint8_t *)s->address,
+            ofproto->rstp = rstp_create(ofproto_->name, s->address,
               rstp_send_bpdu_cb, ofproto);
             ofproto->rstp_last_tick = time_msec();
         }
-        rstp_set_bridge_address(ofproto->rstp, (uint8_t *)s->address);
+        rstp_set_bridge_address(ofproto->rstp, s->address);
         rstp_set_bridge_priority(ofproto->rstp, s->priority);
         rstp_set_bridge_ageing_time(ofproto->rstp, s->ageing_time);
         rstp_set_bridge_force_protocol_version(ofproto->rstp,
@@ -2002,18 +2002,12 @@ get_rstp_status(struct ofproto *ofproto_, struct ofproto_rstp_status *s)
 
     if (ofproto->rstp) {
         s->enabled = true;
-        memcpy(s->root_id, rstp_get_root_id(ofproto->rstp),
-                sizeof(s->root_id));
-        memcpy(s->bridge_id, rstp_get_bridge_id(ofproto->rstp),
-                sizeof(s->bridge_id));
-        memcpy(s->designated_id, rstp_get_designated_id(ofproto->rstp),
-                sizeof(s->designated_id));
-        memcpy(s->root_path_cost, rstp_get_root_path_cost(ofproto->rstp),
-                sizeof(s->root_path_cost));
-        memcpy(s->designated_port_id, rstp_get_designated_port_id(ofproto->rstp),
-                sizeof(s->designated_port_id));
-        memcpy(s->bridge_port_id, rstp_get_bridge_port_id(ofproto->rstp),
-                sizeof(s->bridge_port_id));
+        s->root_id = rstp_get_root_id(ofproto->rstp);
+        s->bridge_id = rstp_get_bridge_id(ofproto->rstp);
+        s->designated_id = rstp_get_designated_id(ofproto->rstp);
+        s->root_path_cost = rstp_get_root_path_cost(ofproto->rstp);
+        s->designated_port_id = rstp_get_designated_port_id(ofproto->rstp);
+        s->bridge_port_id = rstp_get_bridge_port_id(ofproto->rstp);
     } else {
         s->enabled = false;
     }
@@ -2330,7 +2324,7 @@ set_rstp_port(struct ofport *ofport_,
             update_rstp_port_state(ofport);
         }
         return 0;
-    } else if ( rp && rstp_port_index(rp) != s->port_num
+    } else if (rp && rstp_port_index(rp) != s->port_num
                   && ofport == rstp_port_get_aux(rp)) {
         /* The port-id changed, so disable the old one if it's not
          * already in use by another port. */
@@ -2368,7 +2362,7 @@ get_rstp_port_status(struct ofport *ofport_,
     }
 
     s->enabled = true;
-    memcpy(s->port_id, rstp_port_get_id(rp), sizeof(s->port_id));
+    s->port_id = rstp_port_get_id(rp);
     s->state = rstp_port_get_state(rp);
     s->role = rstp_port_get_role(rp);
     rstp_port_get_counts(rp, &s->tx_count, &s->rx_count,

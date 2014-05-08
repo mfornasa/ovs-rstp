@@ -81,13 +81,13 @@ validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
     const struct rstp_bpdu *temp;
     
     temp = bpdu;
-    if (bpdu_size < 4 || temp->protocol_identifier != 0) {
+    if (bpdu_size < 4 || ntohs(temp->protocol_identifier) != 0) {
         return -1;
     } else {
-        if (temp->bpdu_type == CONFIGURATION_BPDU && bpdu_size >= 35 && memcmp(temp->message_age, temp->max_age, sizeof(uint8_t[2])) < 0) {
-            if (memcmp(temp->priority_vector.designated_bridge_id, p->rstp->bridge_identifier, sizeof(uint8_t[8])) != 0 ||
-                    (memcmp(temp->priority_vector.designated_bridge_id, p->rstp->bridge_identifier, sizeof(uint8_t[8])) == 0 &&
-                     (memcmp(temp->priority_vector.designated_port_id, p->port_id, sizeof(uint8_t[2])) != 0))) {
+        if (temp->bpdu_type == CONFIGURATION_BPDU && bpdu_size >= 35 && (time_decode(temp->message_age) <  time_decode(temp->max_age))) {
+            if ((ntohll(temp->designated_bridge_id) != p->rstp->bridge_identifier) ||
+                    ((ntohll(temp->designated_bridge_id) ==  p->rstp->bridge_identifier) &&
+                     (ntohs(temp->designated_port_id) != p->port_id))) {
                 return 0;
             }
             else {
@@ -208,49 +208,46 @@ updt_roles_tree(struct rstp *r)
     struct rstp_priority_vector best_vector, candidate_vector;
     
     vsel = -1;
-    memcpy(&best_vector, &r->bridge_priority, sizeof(struct rstp_priority_vector));
+    best_vector = r->bridge_priority;
     /* Letter c1) */
-    memcpy(&r->root_times, &r->bridge_times, sizeof(struct rstp_times));
+    r->root_times = r->bridge_times;
     /* Letters a) b) c) */
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         uint32_t old_root_path_cost;
         unsigned int root_path_cost;
-        unsigned int n;
         struct rstp_port *p = rstp_get_port(r, port_no);
         if (p->info_is !=INFO_IS_RECEIVED) {
             continue;
         }
         /* [17.6] */
-        memcpy(&candidate_vector, &p->port_priority, sizeof(struct rstp_priority_vector4));
-        memcpy(&candidate_vector.bridge_port_id[0], &p->port_id[0], 2);
-        memcpy(&old_root_path_cost, candidate_vector.root_path_cost, sizeof(uint32_t));
-        root_path_cost = ntohl(old_root_path_cost);
-        root_path_cost += p->port_path_cost;
-        n = htonl(root_path_cost);
-        memcpy(&candidate_vector.root_path_cost, &n, 4);
+        candidate_vector = p->port_priority;
+        candidate_vector.bridge_port_id = p->port_id;
+        old_root_path_cost = candidate_vector.root_path_cost;
+        root_path_cost = old_root_path_cost + p->port_path_cost;
+        candidate_vector.root_path_cost = root_path_cost;
 
-        if (memcmp(&candidate_vector.designated_bridge_id[2], &r->bridge_priority.designated_bridge_id[2], ETH_ADDR_LEN) == 0) {
+        if ((candidate_vector.designated_bridge_id & 0xFFFFFFFFFFFFFF) == (r->bridge_priority.designated_bridge_id & 0xFFFFFFFFFFFFFF)) {
             break;
         }
         if (rstp_priority_vector_is_superior(&candidate_vector, &best_vector) == SUPERIOR_ABSOLUTE ||
             rstp_priority_vector_is_superior(&candidate_vector, &best_vector) == SUPERIOR_SAME_DES) {
-            memcpy(&best_vector, &candidate_vector, sizeof(struct rstp_priority_vector));
-            memcpy(&r->root_times, &p->port_times, sizeof(struct rstp_times));
+            best_vector = candidate_vector;
+            r->root_times = p->port_times;
             r->root_times.message_age++;
             vsel = p->port_number;
         }
     }
-    memcpy(&r->root_priority, &best_vector, sizeof(struct rstp_priority_vector));
-    memcpy(&r->root_port_id, &((uint8_t *)&best_vector)[sizeof(struct rstp_priority_vector4)], 2);
-    VLOG_DBG("%s: new Root is %s", r->name, get_id_string_from_uint8_t(r->root_priority.root_bridge_id, 8));
+    r->root_priority = best_vector;
+    r->root_port_id = best_vector.bridge_port_id; 
+    VLOG_DBG("%s: new Root is "RSTP_ID_FMT"", r->name, RSTP_ID_ARGS(r->root_priority.root_bridge_id));
     /* Letters d) e) */
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
         struct rstp_port *p = rstp_get_port(r, port_no);
-        memcpy(&p->designated_priority_vector.root_bridge_id, &r->root_priority.root_bridge_id, 8);
-        memcpy(&p->designated_priority_vector.root_path_cost, &r->root_priority.root_path_cost, 4);
-        memcpy(&p->designated_priority_vector.designated_bridge_id, &r->bridge_identifier, 8);
-        memcpy(&p->designated_priority_vector.designated_port_id, &p->port_id, 2);
-        memcpy(&p->designated_times, &r->root_times, sizeof(struct rstp_times));
+        p->designated_priority_vector.root_bridge_id = r->root_priority.root_bridge_id;
+        p->designated_priority_vector.root_path_cost = r->root_priority.root_path_cost;
+        p->designated_priority_vector.designated_bridge_id = r->bridge_identifier;
+        p->designated_priority_vector.designated_port_id = p->port_id;
+        p->designated_times = r->root_times;
         p->designated_times.hello_time = r->bridge_times.hello_time;
     }
     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
@@ -275,7 +272,7 @@ updt_roles_tree(struct rstp *r)
                 p->selected_role = ROLE_ROOT;
                 p->updt_info = false;
             } else if (rstp_priority_vector_is_superior(&p->designated_priority_vector, &p->port_priority) == NOT_SUPERIOR) {
-        if (memcmp(p->port_priority.designated_bridge_id, r->bridge_identifier, 8)!=0) {
+        if (p->port_priority.designated_bridge_id != r->bridge_identifier) {
                     p->selected_role = ROLE_ALTERNATE;
                     p->updt_info = false;
                 } else {
@@ -625,7 +622,10 @@ record_proposal(struct rstp_port *p)
 void
 record_priority(struct rstp_port *p)
 {
-    memcpy(&p->port_priority, &p->msg_priority, sizeof(struct rstp_priority_vector4));
+    p->port_priority.root_bridge_id = p->msg_priority.root_bridge_id;
+    p->port_priority.root_path_cost = p->msg_priority.root_path_cost;
+    p->port_priority.designated_bridge_id = p->msg_priority.designated_bridge_id;
+    p->port_priority.designated_port_id = p->msg_priority.designated_port_id;
 }
 
 void
@@ -651,22 +651,16 @@ updt_rcvd_info_while(struct rstp_port *p)
      }
 }
 
-void
-time_encode(unsigned int value, uint8_t *encoded)
+ovs_be16
+time_encode(uint8_t value)
 {
-    uint16_t val;
-    
-    val = htons(value*256);
-    memcpy(encoded, &val, sizeof(uint16_t));
+    return htons(value * 256);
 }
 
-unsigned int
-time_decode(uint8_t *encoded)
+uint8_t
+time_decode(ovs_be16 encoded)
 {
-    uint16_t val;
-
-    memcpy(&val, encoded, sizeof(uint16_t));
-    return (ntohs(val)/256);
+    return (ntohs(encoded) / 256);
 }
 
 /* [17.21.19] */
@@ -680,11 +674,14 @@ tx_config(struct rstp_port *p)
     bpdu.protocol_identifier = htons(0);
     bpdu.protocol_version_identifier = 0;
     bpdu.bpdu_type = CONFIGURATION_BPDU;
-    memcpy(&bpdu.priority_vector, &p->designated_priority_vector, sizeof(struct rstp_priority_vector4));
-    time_encode(p->designated_times.message_age, bpdu.message_age);
-    time_encode(p->designated_times.max_age, bpdu.max_age);
-    time_encode(p->designated_times.hello_time, bpdu.hello_time);
-    time_encode(p->designated_times.forward_delay, bpdu.forward_delay);
+    bpdu.root_bridge_id = htonll(p->designated_priority_vector.root_bridge_id);
+    bpdu.root_path_cost = htonl(p->designated_priority_vector.root_path_cost);
+    bpdu.designated_bridge_id = htonll(p->designated_priority_vector.designated_bridge_id);
+    bpdu.designated_port_id = htons(p->designated_priority_vector.designated_port_id);   
+    bpdu.message_age = time_encode(p->designated_times.message_age);
+    bpdu.max_age = time_encode(p->designated_times.max_age);
+    bpdu.hello_time = time_encode(p->designated_times.hello_time);
+    bpdu.forward_delay = time_encode(p->designated_times.forward_delay);
     if (p->tc_while !=0) {
         bpdu.flags |= BPDU_FLAG_TOPCHANGE;
     }
@@ -705,11 +702,14 @@ tx_rstp(struct rstp_port *p)
     bpdu.protocol_identifier = htons(0);
     bpdu.protocol_version_identifier = 2;
     bpdu.bpdu_type = RAPID_SPANNING_TREE_BPDU;
-    memcpy(&bpdu.priority_vector, &p->designated_priority_vector, sizeof(struct rstp_priority_vector4));
-    time_encode(p->designated_times.message_age, bpdu.message_age);
-    time_encode(p->designated_times.max_age, bpdu.max_age);
-    time_encode(p->designated_times.hello_time, bpdu.hello_time);
-    time_encode(p->designated_times.forward_delay, bpdu.forward_delay);
+    bpdu.root_bridge_id = htonll(p->designated_priority_vector.root_bridge_id);
+    bpdu.root_path_cost = htonl(p->designated_priority_vector.root_path_cost);
+    bpdu.designated_bridge_id = htonll(p->designated_priority_vector.designated_bridge_id);
+    bpdu.designated_port_id = htons(p->designated_priority_vector.designated_port_id);
+    bpdu.message_age = time_encode(p->designated_times.message_age);
+    bpdu.max_age = time_encode(p->designated_times.max_age);
+    bpdu.hello_time = time_encode(p->designated_times.hello_time);
+    bpdu.forward_delay = time_encode(p->designated_times.forward_delay);
     switch (p->role) {
     case ROLE_ROOT:
         bpdu.flags = PORT_ROOT<<2;
@@ -860,7 +860,11 @@ rcv_info(struct rstp_port *p)
     int ct;
     unsigned int role;
 
-    memcpy(&p->msg_priority,  &p->received_bpdu_buffer.priority_vector, sizeof(struct rstp_priority_vector4));
+    p->msg_priority.root_bridge_id = ntohll(p->received_bpdu_buffer.root_bridge_id);
+    p->msg_priority.root_path_cost = ntohl(p->received_bpdu_buffer.root_path_cost);
+    p->msg_priority.designated_bridge_id = ntohll(p->received_bpdu_buffer.designated_bridge_id);
+    p->msg_priority.designated_port_id = ntohs(p->received_bpdu_buffer.designated_port_id);
+
     p->msg_times.forward_delay = time_decode(p->received_bpdu_buffer.forward_delay);
     p->msg_times.hello_time = time_decode(p->received_bpdu_buffer.hello_time);
     p->msg_times.max_age = time_decode(p->received_bpdu_buffer.max_age);
@@ -970,8 +974,11 @@ port_information_sm(struct rstp_port *p)
         p->proposing = p->proposed = false;
         p->agreed = p->agreed && better_or_same_info(p, MINE); /* MINE is not specified in Standard 802.1D-2004. */
         p->synced = p->synced && p->agreed;
-        memcpy(&p->port_priority, &p->designated_priority_vector, sizeof(struct rstp_priority_vector4));
-        memcpy(&p->port_times, &p->designated_times, sizeof(struct rstp_times));
+        p->port_priority.root_bridge_id = p->designated_priority_vector.root_bridge_id;
+        p->port_priority.root_path_cost = p->designated_priority_vector.root_path_cost;
+        p->port_priority.designated_bridge_id = p->designated_priority_vector.designated_bridge_id;
+        p->port_priority.designated_port_id = p->designated_priority_vector.designated_port_id;
+        p->port_times = p->designated_times;
         p->updt_info = false;
         p->info_is = INFO_IS_MINE;
         p->new_info = true;
@@ -1122,7 +1129,7 @@ fwd_delay(struct rstp_port *p)
 
 
 int
-forward_delay (struct rstp_port *p)
+forward_delay(struct rstp_port *p)
 {
     if (p->send_rstp) {
         return hello_time(p);
@@ -1132,7 +1139,7 @@ forward_delay (struct rstp_port *p)
 }
 
 int
-edge_delay (struct rstp_port *p)
+edge_delay(struct rstp_port *p)
 {
     struct rstp *r;
     
@@ -1455,7 +1462,7 @@ port_role_transition_sm(struct rstp_port *p)
     }
     if (last_role != p->role) {
         last_role = p->role;
-        VLOG_DBG("%s, port %u, port role [%s] = %s", p->rstp->name, p->port_number, get_id_string_from_uint8_t(p->port_id, 2), rstp_port_role_name(p->role));
+        VLOG_DBG("%s, port %u, port role ["RSTP_PORT_ID_FMT"] = %s", p->rstp->name, p->port_number, p->port_id, rstp_port_role_name(p->role));
     }
     return 0;
 }
@@ -1727,19 +1734,52 @@ topology_change_sm(struct rstp_port *p)
 */
 enum vector_comparison
 rstp_priority_vector_is_superior(struct rstp_priority_vector *v1, struct rstp_priority_vector *v2)
-{
+{ 
+    VLOG_DBG("v1: "RSTP_ID_FMT", %u, "RSTP_ID_FMT", %d", RSTP_ID_ARGS(v1->root_bridge_id), v1->root_path_cost, RSTP_ID_ARGS(v1->designated_bridge_id), v1->designated_port_id);
+        VLOG_DBG("v2: "RSTP_ID_FMT", %u, "RSTP_ID_FMT", %d", RSTP_ID_ARGS(v2->root_bridge_id), v2->root_path_cost, RSTP_ID_ARGS(v2->designated_bridge_id), v2->designated_port_id);
+/*
     if (memcmp(v1, v2, sizeof(struct rstp_priority_vector4)) < 0) {
+        VLOG_DBG("superior_absolute");       
         return SUPERIOR_ABSOLUTE;
     }
     else if ((memcmp(v1, v2, sizeof(struct rstp_priority_vector4)) > 0) &&
-            (memcmp(v1->designated_bridge_id, v2->designated_bridge_id, sizeof(uint8_t[8])) == 0) &&
-            (memcmp(v1->designated_port_id, v2->designated_port_id, sizeof (uint8_t[2])) == 0)) {
+            (v1->designated_bridge_id == v2->designated_bridge_id) &&
+            (v1->designated_port_id == v2->designated_port_id)) {
+        VLOG_DBG("superior_same_des");
         return SUPERIOR_SAME_DES;
     }
     else if (memcmp(v1, v2, sizeof(struct rstp_priority_vector)) == 0) {
+        VLOG_DBG("same");
         return SAME;
     }
     else {
+        VLOG_DBG("not_superior");
         return NOT_SUPERIOR;
     }
+*/
+    if ((v1->root_bridge_id < v2->root_bridge_id) ||
+        ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost < v2->root_path_cost)) ||
+        ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost == v2->root_path_cost) && (v1->designated_bridge_id < v2->designated_bridge_id)) ||
+        ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost == v2->root_path_cost) && (v1->designated_bridge_id == v2->designated_bridge_id) && (v1->designated_port_id < v2->designated_port_id))) {
+        VLOG_DBG("superior_absolute");
+        return SUPERIOR_ABSOLUTE;
+    }
+    else if (((v1->root_bridge_id > v2->root_bridge_id) ||
+                ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost > v2->root_path_cost)) ||
+                ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost == v2->root_path_cost) && (v1->designated_bridge_id > v2->designated_bridge_id)) ||
+                ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost == v2->root_path_cost) && (v1->designated_bridge_id == v2->designated_bridge_id) && (v1->designated_port_id > v2->designated_port_id))) &&
+            (v1->designated_bridge_id == v2->designated_bridge_id) && (v1->designated_port_id == v2->designated_port_id)) {
+        VLOG_DBG("superior_same_des");
+        return SUPERIOR_SAME_DES;
+    }
+    else if ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost == v2->root_path_cost) && 
+            (v1->designated_bridge_id == v2->designated_bridge_id) && (v1->designated_port_id == v2->designated_port_id)) {
+        VLOG_DBG("same");
+        return SAME;
+    }
+    else {
+        VLOG_DBG("not superior");
+        return NOT_SUPERIOR;
+    }
+    
 }

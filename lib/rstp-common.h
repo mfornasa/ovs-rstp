@@ -178,37 +178,37 @@ struct rstp_times {
     /* [17.13.5 - Bridge Forward Delay] The delay used by STP Bridges (17.4)
        to transition Root and Designated Ports to Forwarding (Table 17-1).
        Default = 15.0 s. Values in range 4.0 - 30.0 */
-    unsigned int forward_delay;
+    uint16_t forward_delay;
 
     /* [17.13.6 - Bridge Hello Time]
        The interval between periodic transmissions of Configuration Messages by
        Designated Ports (Table 17-1).
        Default = 2.0 s. Fixed value */
-    unsigned int hello_time;
+    uint16_t hello_time;
 
     /* [17.13.8 - Bridge Max Age]
        The maximum age of the information transmitted by the Bridge when it is
        the Root Bridge (Table 17-1).
        Default = 20.0 s. Values in range 6.0 - 40.0 */
-    unsigned int max_age;
+    uint16_t max_age;
 
-    unsigned int message_age;
+    uint16_t message_age;
 };
 
 /* Priority vector [17.6] */
 struct rstp_priority_vector {
-    uint8_t root_bridge_id[8];
-    uint8_t root_path_cost[4];
-    uint8_t designated_bridge_id[8];
-    uint8_t designated_port_id[2];
-    uint8_t bridge_port_id[2];
+    rstp_identifier root_bridge_id;
+    uint32_t root_path_cost;
+    rstp_identifier designated_bridge_id;
+    uint16_t designated_port_id;
+    uint16_t bridge_port_id;
 };
 
 struct rstp_priority_vector4 {
-    uint8_t root_bridge_id[8];
-    uint8_t root_path_cost[4];
-    uint8_t designated_bridge_id[8];
-    uint8_t designated_port_id[2];
+    rstp_identifier root_bridge_id;
+    uint32_t root_path_cost;
+    rstp_identifier designated_bridge_id;
+    uint16_t designated_port_id;
 };
 
 enum rstp_bpdu_type {
@@ -229,15 +229,18 @@ enum rstp_bpdu_flag {
 /* Rapid Spanning Tree BPDU [9.3.3] */
 OVS_PACKED(
 struct rstp_bpdu {
-    uint16_t protocol_identifier;
+    ovs_be16 protocol_identifier;
     uint8_t  protocol_version_identifier;
     uint8_t  bpdu_type;
     uint8_t  flags;
-    struct   rstp_priority_vector4 priority_vector;
-    uint8_t  message_age[2];
-    uint8_t  max_age[2];
-    uint8_t  hello_time[2];
-    uint8_t  forward_delay[2];
+    ovs_be64 root_bridge_id;
+    ovs_be32 root_path_cost;
+    ovs_be64 designated_bridge_id;
+    ovs_be16 designated_port_id;
+    ovs_be16  message_age;
+    ovs_be16  max_age;
+    ovs_be16  hello_time;
+    ovs_be16  forward_delay;
     uint8_t  version1_length;
     uint8_t  padding[7];
 });
@@ -517,7 +520,7 @@ struct rstp_port {
     /* [17.19.19 - portId]
        The Port Identifier. This variable forms the fifth component of the port
        priority and designated priority vectors defined in 17.6. */
-    uint8_t port_id[2];
+    uint16_t port_id;
 
     /* [17.19.21 - portPriority]
        The first four components of the Port’s port priority vector value, as
@@ -665,7 +668,7 @@ struct rstp {
     enum port_role_selection_state_machine port_role_selection_sm_state;
 
     /* Bridge MAC address */
-    uint8_t address[ETH_ADDR_LEN]; /* [7.12.5] */
+    rstp_identifier address; /* [7.12.5] */
 
     /* Bridge priority */
     uint16_t priority;      /* Valid values: 0-61440 in steps of 4096 */
@@ -710,17 +713,17 @@ struct rstp {
     /* [17.13.5 - Bridge Forward Delay]
        The delay used by STP Bridges (17.4) to transition Root and Designated
        Ports to Forwarding (Table 17-1). */
-    unsigned int bridge_forward_delay;
+    uint16_t bridge_forward_delay;
 
     /* [17.13.6 - Bridge Hello Time]
        The interval between periodic transmissions of Configuration Messages by
        Designated Ports (Table 17-1). */
-    unsigned int bridge_hello_time;
+    uint16_t bridge_hello_time;
 
     /* [17.13.8 - Bridge Max Age]
        The maximum age of the information transmitted by the Bridge when it is
        the Root Bridge (Table 17-1). */
-    unsigned int bridge_max_age;
+    uint16_t bridge_max_age;
 
     /* [17.13.9 - Migrate Time]
        The initial value of the mdelayWhile and edgeDelayWhile timers (17.17.4,
@@ -752,7 +755,7 @@ struct rstp {
        Bridge Identifiers are compared, and a component derived from the Bridge
        Address (7.12.5), which guarantees uniqueness of the Bridge Identifiers
        of different Bridges. */
-    uint8_t bridge_identifier[8];
+    rstp_identifier bridge_identifier;
 
     /* [17.8.3 BridgePriority]
        The bridge priority vector, as defined in 17.6. The first (RootBridgeID)
@@ -774,7 +777,7 @@ struct rstp {
     /* [17.18.5 - rootPortId]
         The Port Identifier of the Root Port. This is the fifth component of
         the root priority vector, as defined in 17.6. */
-    uint8_t root_port_id[2];
+    uint16_t root_port_id;
 
     /* [17.18.7 - rootTimes]
        The rootTimes variable comprises the Bridge's operational timer parameter

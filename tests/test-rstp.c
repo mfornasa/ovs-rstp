@@ -101,15 +101,10 @@ new_bridge(struct test_case *tc, int id)
 {
     struct bridge *b = xmalloc(sizeof *b);
     char name[16];
-    uint8_t identifier[ETH_ADDR_LEN];
-    int i;
-    for (i=0;i<ETH_ADDR_LEN;i++){
-        identifier[i] = id;
-    }
     b->tc = tc;
     b->id = id;
     snprintf(name, sizeof name, "rstp%x", id);
-    b->rstp = rstp_create(name, identifier, send_bpdu, b);
+    b->rstp = rstp_create(name, id, send_bpdu, b);
     assert(tc->n_bridges < ARRAY_SIZE(tc->bridges));
     b->n_ports = 0;
     b->rxq_head = b->rxq_tail = 0;
@@ -203,8 +198,8 @@ dump(struct test_case *tc)
             }
             printf(": %s", rstp_state_name(state));
             if (p == rstp_get_root_port(rstp)) {
-                printf(" (root port, root_path_cost=%s)",
-                       get_id_string_from_uint8_t(rstp_get_root_path_cost(rstp),4));
+                printf(" (root port, root_path_cost=%u)",
+                       rstp_get_root_path_cost(rstp));
             }
             printf("\n");
         }
@@ -533,7 +528,7 @@ test_rstp_main(int argc, char *argv[])
             struct bridge *b;
             struct rstp *rstp;
             int bridge_no, port_no;
-            uint32_t cost_value, temp;
+            uint32_t cost_value;
 
             bridge_no = must_get_int();
             if (bridge_no >= tc->n_bridges) {
@@ -553,25 +548,24 @@ test_rstp_main(int argc, char *argv[])
                 } else {
                     rootid |= UINT64_C(0x8000) << 48;
                 }
-                if (memcmp(rstp_get_designated_root(rstp),&rootid,8)!=0) {
-                    warn("%s: root %s, not %"PRIx64,
+                if (rstp_get_designated_root(rstp) != rootid) {
+                    warn("%s: root "RSTP_ID_FMT", not %"PRIx64,
                          rstp_get_name(rstp),
-                         get_id_string_from_uint8_t(rstp_get_designated_root(rstp),8),
+                         RSTP_ID_ARGS(rstp_get_designated_root(rstp)),
                          rootid);
                 }
             }
-            memcpy(&temp, rstp_get_root_path_cost(rstp), sizeof(uint32_t));
-            cost_value = ntohl(temp);
+            cost_value = rstp_get_root_path_cost(rstp);
             if (match("root")) {
                 if (cost_value != 0) {
                     warn("%s: root path cost of root is %d instead of 0 \n",
                             rstp_get_name(rstp), cost_value);
                 }
                 if (!rstp_is_root_bridge(rstp)) {
-                    warn("%s: root is %s, not %s",
+                    warn("%s: root is "RSTP_ID_FMT", not "RSTP_ID_FMT"",
                          rstp_get_name(rstp),
-                         get_id_string_from_uint8_t(rstp_get_designated_root(rstp),8),
-                         get_id_string_from_uint8_t(rstp_get_bridge_id(rstp),8));
+                         RSTP_ID_ARGS(rstp_get_designated_root(rstp)),
+                         RSTP_ID_ARGS(rstp_get_bridge_id(rstp)));
                 }
                 for (port_no = 0; port_no < b->n_ports; port_no++) {
                     struct rstp_port *p = rstp_get_port(rstp, port_no);

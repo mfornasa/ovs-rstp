@@ -1521,16 +1521,16 @@ bridge_configure_rstp(struct bridge *br)
             uint8_t ea[ETH_ADDR_LEN];
 
             if (eth_addr_from_string(config_str, ea)) {
-                memcpy(&br_s.address, &ea, ETH_ADDR_LEN);
+                br_s.address = eth_addr_to_uint64(ea);
             }
             else {
-                memcpy(&br_s.address, br->ea, ETH_ADDR_LEN);
+                br_s.address = eth_addr_to_uint64(br->ea);
                 VLOG_ERR("bridge %s: invalid rstp-address, defaulting "
                         "to "ETH_ADDR_FMT, br->name, ETH_ADDR_ARGS(br->ea));
             }
         }
         else {
-            memcpy(&br_s.address, br->ea, ETH_ADDR_LEN);
+            br_s.address = eth_addr_to_uint64(br->ea);
         }
 
         config_str = smap_get(&br->cfg->other_config, "rstp-priority");
@@ -2378,24 +2378,18 @@ br_refresh_rstp_status(struct bridge *br)
         ovsrec_bridge_set_rstp_status(br->cfg, NULL);
         return;
     }
-    smap_add_format(&smap, "rstp_bridge_id", "%s",
-                    get_id_string_from_uint8_t(status.bridge_id, 8));
-
-    smap_add_format(&smap, "rstp_root_path_cost", "%s",
-                    get_id_string_from_uint8_t(status.root_path_cost, 4));
-
-    smap_add_format(&smap, "rstp_root_id", "%s",
-                    get_id_string_from_uint8_t(status.root_id, 8));
-
-    smap_add_format(&smap, "rstp_designated_id", "%s",
-                    get_id_string_from_uint8_t(status.designated_id, 8));
-
-    smap_add_format(&smap, "rstp_designated_port_id", "%s",
-                    get_id_string_from_uint8_t(status.designated_port_id, 2));
-
-    smap_add_format(&smap, "rstp_bridge_port_id", "%s",
-                    get_id_string_from_uint8_t(status.bridge_port_id, 2));
-
+    smap_add_format(&smap, "rstp_bridge_id", RSTP_ID_FMT,
+                    RSTP_ID_ARGS(status.bridge_id));
+    smap_add_format(&smap, "rstp_root_path_cost", "%d", 
+                    status.root_path_cost);
+    smap_add_format(&smap, "rstp_root_id", RSTP_ID_FMT,
+                    RSTP_ID_ARGS(status.root_id));
+    smap_add_format(&smap, "rstp_designated_id", RSTP_ID_FMT,
+                    RSTP_ID_ARGS(status.designated_id));
+    smap_add_format(&smap, "rstp_designated_port_id", RSTP_PORT_ID_FMT,
+                    status.designated_port_id);
+    smap_add_format(&smap, "rstp_bridge_port_id", RSTP_PORT_ID_FMT,
+                    status.bridge_port_id);
     ovsrec_bridge_set_rstp_status(br->cfg, &smap);
     smap_destroy(&smap);
 }
@@ -2433,8 +2427,8 @@ port_refresh_rstp_status(struct port *port)
     /* Set Status column. */
     smap_init(&smap);
 
-    smap_add_format(&smap, "rstp_port_id", "%s",
-                    get_id_string_from_uint8_t(status.port_id, 2));
+    smap_add_format(&smap, "rstp_port_id", RSTP_PORT_ID_FMT,
+                    status.port_id);
     smap_add_format(&smap, "rstp_port_role", "%s",
                     rstp_port_role_name(status.role));
     smap_add_format(&smap, "rstp_port_state", "%s",

@@ -79,6 +79,19 @@ struct ofpbuf;
 #define RSTP_MAX_PORT_PATH_COST 200000000
 #define RSTP_DEFAULT_PORT_PATH_COST 200000
 
+/* RSTP Bridge identifier [9.2.5].  Top four most significant bits are a
+ * priority value. The next most significant twelve bits are a locally assigned
+ * system ID extension. Bottom 48 bits are MAC address of bridge. */
+typedef uint64_t rstp_identifier;
+
+#define RSTP_ID_FMT "%01"PRIx8".%03"PRIx16".%012"PRIx64
+#define RSTP_ID_ARGS(rstp_id) \
+    (uint8_t)((rstp_id) >> 60), \
+    (uint16_t)(((rstp_id) & 0x0fff000000000000ULL) >> 48), \
+    (uint64_t)((rstp_id) & 0xffffffffffffULL)
+
+#define RSTP_PORT_ID_FMT "%04"PRIx16
+
 /* Port state encoding [9.3.3] */
 enum rstp_state {
     RSTP_DISABLED = 1 << 0,
@@ -114,7 +127,7 @@ const char *rstp_port_role_name(enum rstp_port_role);
 
 void rstp_init(void);
 
-struct rstp * rstp_create(const char *, uint8_t *,
+struct rstp * rstp_create(const char *, rstp_identifier bridge_id,
         void (*send_bpdu)(struct ofpbuf *, int port_no, void *),
                 void *);
 struct rstp *rstp_ref(const struct rstp *);
@@ -132,7 +145,7 @@ void rstp_port_set_mac_operational(struct rstp_port *,
 bool rstp_port_get_mac_operational(struct rstp_port *);
 
 /* Bridge setters */
-void rstp_set_bridge_address(struct rstp *, uint8_t []);
+void rstp_set_bridge_address(struct rstp *, rstp_identifier bridge_address);
 void rstp_set_bridge_priority(struct rstp *, int new_priority);
 void rstp_set_bridge_ageing_time(struct rstp *, int new_ageing_time);
 void rstp_set_bridge_force_protocol_version(struct rstp *,
@@ -163,20 +176,20 @@ void rstp_port_set_mcheck(struct rstp_port *, bool new_mcheck);
 
 /* Bridge getters */
 const char * rstp_get_name(const struct rstp *);
-uint8_t * rstp_get_root_id(const struct rstp *);
-uint8_t * rstp_get_bridge_id(const struct rstp *);
-uint8_t * rstp_get_designated_id(const struct rstp *);
-uint8_t * rstp_get_root_path_cost(const struct rstp *);
-uint8_t * rstp_get_designated_port_id(const struct rstp *);
-uint8_t * rstp_get_bridge_port_id(const struct rstp *);
+rstp_identifier rstp_get_root_id(const struct rstp *);
+rstp_identifier rstp_get_bridge_id(const struct rstp *);
+rstp_identifier rstp_get_designated_id(const struct rstp *);
+uint32_t rstp_get_root_path_cost(const struct rstp *);
+uint16_t rstp_get_designated_port_id(const struct rstp *);
+uint16_t rstp_get_bridge_port_id(const struct rstp *);
 struct rstp_port * rstp_get_root_port(struct rstp *);
-uint8_t * rstp_get_designated_root(const struct rstp *);
+rstp_identifier rstp_get_designated_root(const struct rstp *);
 bool rstp_is_root_bridge(const struct rstp *);
 
 /* Port getters */
 int rstp_port_index(const struct rstp_port *);
 struct rstp_port *rstp_get_port(struct rstp *, int port_no);
-uint8_t * rstp_port_get_id(const struct rstp_port *);
+uint16_t rstp_port_get_id(const struct rstp_port *);
 enum rstp_state rstp_port_get_state(const struct rstp_port *);
 enum rstp_port_role rstp_port_get_role(const struct rstp_port *);
 void rstp_port_get_counts(const struct rstp_port *, int *tx_count, int *rx_count,

@@ -84,16 +84,16 @@ struct ofproto_ipfix_flow_exporter_options {
 
 struct ofproto_rstp_status {
     bool enabled;               /* If false, ignore other members. */
-    uint8_t root_id[8];
-    uint8_t bridge_id[8];
-    uint8_t designated_id[8];
-    uint8_t root_path_cost[4];
-    uint8_t designated_port_id[2];
-    uint8_t bridge_port_id[2];
+    rstp_identifier root_id;
+    rstp_identifier bridge_id;
+    rstp_identifier designated_id;
+    uint32_t root_path_cost;
+    uint16_t designated_port_id;
+    uint16_t bridge_port_id;
 };
 
 struct ofproto_rstp_settings {
-    uint8_t address[6];
+    rstp_identifier address;
     uint16_t priority;
     unsigned int ageing_time;
     enum rstp_force_protocol_version force_protocol_version;
@@ -104,7 +104,7 @@ struct ofproto_rstp_settings {
 
 struct ofproto_port_rstp_status {
     bool enabled;               /* If false, ignore other members. */
-    uint8_t port_id[2];
+    uint16_t port_id;
     enum rstp_port_role role;
     enum rstp_state state;
     int tx_count;               /* Number of BPDUs transmitted. */

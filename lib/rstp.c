@@ -179,7 +179,7 @@ rstp_init(void)
 
 /* Creates and returns a new RSTP instance that initially has no ports enabled. */
 struct rstp *
-rstp_create(const char *name, uint8_t *bridge_address,
+rstp_create(const char *name, rstp_identifier bridge_address,
         void (*send_bpdu)(struct ofpbuf *bpdu, int port_no, void *aux),
         void *aux)
 {
@@ -232,22 +232,22 @@ rstp_create(const char *name, uint8_t *bridge_address,
    those setters. */
 void
 set_bridge_priority__(struct rstp *rstp)
-{
-    memcpy(rstp->bridge_priority.root_bridge_id, rstp->bridge_identifier, 8);
-    memcpy(rstp->bridge_priority.designated_bridge_id, rstp->bridge_identifier, 8);
+{ 
+    rstp->bridge_priority.root_bridge_id = rstp->bridge_identifier; 
+    rstp->bridge_priority.designated_bridge_id = rstp->bridge_identifier;
+    VLOG_DBG("%s: new bridge identifier: "RSTP_ID_FMT"", rstp->name, RSTP_ID_ARGS(rstp->bridge_identifier));
 }
 
 /* Sets the bridge address. */
 void
-rstp_set_bridge_address(struct rstp *rstp, uint8_t bridge_address[ETH_ADDR_LEN])
+rstp_set_bridge_address(struct rstp *rstp, rstp_identifier bridge_address)
 {
     struct rstp_port *p;
     
-    VLOG_DBG("%s: set bridge address to %s",
-             rstp->name, get_id_string_from_uint8_t(bridge_address, ETH_ADDR_LEN));
+    VLOG_DBG("%s: set bridge address to: "RSTP_ID_FMT"", rstp->name, RSTP_ID_ARGS(bridge_address));
     ovs_mutex_lock(&mutex);
-    memcpy(rstp->address, bridge_address, ETH_ADDR_LEN);
-    memcpy(rstp->bridge_identifier+2, bridge_address, ETH_ADDR_LEN);
+    rstp->address = bridge_address;
+    rstp->bridge_identifier = bridge_address;
     set_bridge_priority__(rstp);
 
     /* [17.13] When the bridge address changes, recalculates all priority vectors. */
@@ -271,13 +271,13 @@ rstp_get_name(const struct rstp *rstp)
     return name;
 }
 
-uint8_t *
+rstp_identifier
 rstp_get_bridge_id(const struct rstp *rstp)
 {
-    uint8_t *bridge_id;
+    rstp_identifier bridge_id;
     
     ovs_mutex_lock(&mutex);
-    bridge_id = (uint8_t *) rstp->bridge_identifier;
+    bridge_id = rstp->bridge_identifier;
     ovs_mutex_unlock(&mutex);
     return bridge_id;
 }
@@ -287,12 +287,12 @@ void
 rstp_set_bridge_priority(struct rstp *rstp, int new_priority)
 {
     struct rstp_port *p;
-    
     if (new_priority >= RSTP_MIN_PRIORITY && new_priority <= RSTP_MAX_PRIORITY) {
         VLOG_DBG("%s: set bridge priority to %d", rstp->name, (new_priority / 4096) * 4096);
         ovs_mutex_lock(&mutex);
         rstp->priority = (new_priority / 4096) * 4096;
-        rstp->bridge_identifier[0] = (new_priority / 4096) << 4;
+        rstp->bridge_identifier &= 0xFFFFFFFFFFFFFF;
+        rstp->bridge_identifier |= (uint64_t) ((new_priority / 4096) * 4096) << 48;
         set_bridge_priority__(rstp);
 
         /* [17.13] */
@@ -324,7 +324,7 @@ void
 reinitialize_rstp__(struct rstp *rstp)
 {
     char *name;
-    uint8_t bridge_address[ETH_ADDR_LEN];
+    rstp_identifier bridge_address;
     void *send_bpdu;
     void *aux;
     struct ovs_refcount ref_count;
@@ -333,7 +333,7 @@ reinitialize_rstp__(struct rstp *rstp)
     
     /* Copy name, bridge_address, ref_cnt, send_bpdu, aux, node */
     name = xstrdup(rstp->name);
-    memcpy(&bridge_address, rstp->address, sizeof(rstp->address));
+    bridge_address = rstp->address;
     memcpy(&ref_count, &rstp->ref_cnt, sizeof(struct ovs_refcount));
     send_bpdu = rstp->send_bpdu;
     aux = rstp->aux;
@@ -494,17 +494,22 @@ void
 set_port_id__(struct rstp_port *p) /* normally used when mutex is already locked */
 {
     struct rstp *rstp;
+    /*
     uint16_t temp;
     uint8_t *ptemp;
-
+    */
     rstp = p->rstp;
     /* [9.2.7] Port identifier. */
+    /*
     temp = htons(p->port_number);
     ptemp = (uint8_t *)&temp;
 
     p->port_id[1] = ptemp[1];
     p->port_id[0] = ptemp[0] | p->priority;
     VLOG_DBG("%s: new RSTP port id %s", rstp->name, get_id_string_from_uint8_t(p->port_id, 2));
+    */
+    p->port_id = p->port_number | (p->priority << 8); 
+    VLOG_DBG("%s: new RSTP port id "RSTP_PORT_ID_FMT"", rstp->name, p->port_id);
 }
 
 /* Sets the port priority. */
@@ -601,13 +606,13 @@ rstp_port_set_path_cost(struct rstp_port *rstp_port, uint32_t new_port_path_cost
 }
 
 /* Gets the root path cost. */
-uint8_t *
+uint32_t
 rstp_get_root_path_cost(const struct rstp *rstp)
 {
-    uint8_t *cost;
+    uint32_t cost;
     
     ovs_mutex_lock(&mutex);
-    cost = (uint8_t *) rstp->root_priority.root_path_cost;
+    cost = rstp->root_priority.root_path_cost;
     ovs_mutex_unlock(&mutex);
     return cost;
 }
@@ -768,7 +773,7 @@ OVS_REQUIRES(mutex)
 
     p->uptime = 0;
 
-    VLOG_DBG("%s: init RSTP port %s", rstp->name, get_id_string_from_uint8_t(p->port_id, 2));
+    VLOG_DBG("%s: init RSTP port "RSTP_PORT_ID_FMT"", rstp->name,p->port_id);
     return 0;
 }
 
@@ -881,49 +886,49 @@ rstp_port_set_mcheck(struct rstp_port *rstp_port, bool new_mcheck)
 }
 
 /* Returns the designated bridge id. */
-uint8_t *
+rstp_identifier
 rstp_get_designated_id(const struct rstp *rstp)
 {
-    uint8_t *designated_id;
+    rstp_identifier designated_id;
     
     ovs_mutex_lock(&mutex);
-    designated_id = (uint8_t *)rstp->root_priority.designated_bridge_id;
+    designated_id = rstp->root_priority.designated_bridge_id; 
     ovs_mutex_unlock(&mutex);
     return designated_id;
 }
 
 /* Returns the root bridge id. */
-uint8_t *
+rstp_identifier
 rstp_get_root_id(const struct rstp *rstp)
 {
-    uint8_t *root_id;
+    rstp_identifier root_id;
     
     ovs_mutex_lock(&mutex);
-    root_id = (uint8_t *) rstp->root_priority.root_bridge_id;
+    root_id = rstp->root_priority.root_bridge_id; 
     ovs_mutex_unlock(&mutex);
     return root_id;
 }
 
 /* Returns the designated port id. */
-uint8_t *
+uint16_t
 rstp_get_designated_port_id(const struct rstp *rstp)
 {
-    uint8_t *designated_port_id;
+    uint16_t designated_port_id;
     
     ovs_mutex_lock(&mutex);
-    designated_port_id = (uint8_t *) rstp->root_priority.designated_port_id;
+    designated_port_id = rstp->root_priority.designated_port_id;
     ovs_mutex_unlock(&mutex);
     return designated_port_id;
 }
 
 /* Return the bridge port id. */
-uint8_t *
+uint16_t
 rstp_get_bridge_port_id(const struct rstp *rstp)
 {
-    uint8_t *bridge_port_id;
+    uint16_t bridge_port_id;
     
     ovs_mutex_lock(&mutex);
-    bridge_port_id =  (uint8_t *) rstp->root_priority.bridge_port_id;
+    bridge_port_id = rstp->root_priority.bridge_port_id;
     ovs_mutex_unlock(&mutex);
     return bridge_port_id;
 }
@@ -936,24 +941,23 @@ rstp_is_root_bridge(const struct rstp *rstp)
     bool is_root;
 
     ovs_mutex_lock(&mutex);
-    if (memcmp(rstp->bridge_identifier, rstp->root_priority.designated_bridge_id, 8) == 0) {
-        is_root = 1;
+    if (rstp->bridge_identifier == rstp->root_priority.designated_bridge_id) { 
+        is_root = true;
     } else {
-        is_root = 0;
+        is_root = false;
     }
     ovs_mutex_unlock(&mutex);
     return is_root;
 }
 
 /* Returns the bridge ID of the bridge currently believed to be the root. */
-uint8_t *
+rstp_identifier
 rstp_get_designated_root(const struct rstp *rstp)
 {
-    uint8_t *designated_root;
+    rstp_identifier designated_root;
     
-    designated_root = xzalloc(sizeof(uint8_t [8]));
     ovs_mutex_lock(&mutex);
-    memcpy(designated_root, rstp->root_priority.designated_bridge_id, 8);
+    designated_root = rstp->root_priority.designated_bridge_id; 
     ovs_mutex_unlock(&mutex);
     return designated_root;
 }
@@ -986,13 +990,13 @@ rstp_get_root_port(struct rstp *rstp)
 }
 
 /* Returns the port ID for 'p'. */
-uint8_t *
+uint16_t
 rstp_port_get_id(const struct rstp_port *p)
 {
-    uint8_t *port_id;
+    uint16_t port_id;
     
     ovs_mutex_lock(&mutex);
-    port_id = (uint8_t *) p->port_id;
+    port_id = p->port_id;
     ovs_mutex_unlock(&mutex);
     return port_id;
 }
