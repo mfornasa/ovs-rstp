@@ -263,7 +263,7 @@ updt_roles_tree(struct rstp *r)
         case INFO_IS_MINE:
             p->selected_role = ROLE_DESIGNATED;
             if ((rstp_priority_vector_is_superior(&p->port_priority, &p->designated_priority_vector) != SAME) ||
-                (memcmp(&p->designated_times, &r->root_times, sizeof(struct rstp_times)) != 0)) {
+                !rstp_times_equal(&p->designated_times, &r->root_times)) {
                 p->updt_info = true;
             }
             break;
@@ -857,7 +857,7 @@ int
 rcv_info(struct rstp_port *p)
 {
     enum vector_comparison cp;
-    int ct;
+    bool ct;
     unsigned int role;
 
     p->msg_priority.root_bridge_id = ntohll(p->received_bpdu_buffer.root_bridge_id);
@@ -871,7 +871,7 @@ rcv_info(struct rstp_port *p)
     p->msg_times.message_age = time_decode(p->received_bpdu_buffer.message_age);
 
     cp = rstp_priority_vector_is_superior(&p->msg_priority, &p->port_priority);
-    ct = memcmp(&p->port_times, &p->msg_times, sizeof(struct rstp_times));
+    ct = rstp_times_equal(&p->port_times, &p->msg_times);
     role = ((p->received_bpdu_buffer.flags) & 0xC) >> 2;
 
     /*Returns SuperiorDesignatedInfo if:
@@ -883,7 +883,7 @@ rcv_info(struct rstp_port *p)
            17.19.15) differ from those already held for the Port (port_times
            17.19.22).
       NOTE: Configuration BPDU explicitly conveys a Designated Port Role.*/
-    if ((role == PORT_DES || p->received_bpdu_buffer.bpdu_type == CONFIGURATION_BPDU) && ((cp == SUPERIOR_ABSOLUTE) || (cp == SUPERIOR_SAME_DES) || ((cp == SAME) && ct != 0))) {
+    if ((role == PORT_DES || p->received_bpdu_buffer.bpdu_type == CONFIGURATION_BPDU) && ((cp == SUPERIOR_ABSOLUTE) || (cp == SUPERIOR_SAME_DES) || ((cp == SAME) && ct == false))) {
         return SUPERIOR_DESIGNATED_INFO;
     }
 
@@ -891,7 +891,7 @@ rcv_info(struct rstp_port *p)
       b) The received message conveys Designated Port Role, and a message
          priority vector and timer parameters that are the same as the Port's
          port priority vector or timer values.*/
-    else if ((role == PORT_DES) && (cp == SAME) && (ct == 0)) {
+    else if ((role == PORT_DES) && (cp == SAME) && (ct == true)) {
         return REPEATED_DESIGNATED_INFO;
     }
 
@@ -1781,5 +1781,12 @@ rstp_priority_vector_is_superior(struct rstp_priority_vector *v1, struct rstp_pr
         VLOG_DBG("not superior");
         return NOT_SUPERIOR;
     }
-    
+}
+
+bool 
+rstp_times_equal(struct rstp_times *t1, struct rstp_times *t2) {
+    return ((t1->forward_delay == t2->forward_delay) &&
+            (t1->hello_time == t2->hello_time) &&
+            (t1->max_age == t2->max_age) &&
+            (t1->message_age == t2->message_age));
 }

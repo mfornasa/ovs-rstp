@@ -107,4 +107,6 @@ enum vector_comparison {
 enum vector_comparison rstp_priority_vector_is_superior(struct rstp_priority_vector *v1,
                                      struct rstp_priority_vector *v2);
 
+bool rstp_times_equal(struct rstp_times *t1, struct rstp_times *t2);
+
 #endif /* rstp-state-machines.h */
