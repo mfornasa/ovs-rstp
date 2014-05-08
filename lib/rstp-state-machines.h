@@ -98,13 +98,12 @@ void set_tc_prop_tree(struct rstp_port *);
 void set_tc_prop_bridge(struct rstp_port *);
 
 enum vector_comparison {
-    NOT_SUPERIOR = 0,
-    SUPERIOR_ABSOLUTE = 1,
-    SUPERIOR_SAME_DES = 2,
-    SAME = 3
+    INFERIOR = 0,
+    SUPERIOR = 1,
+    SAME = 2
 };
 
-enum vector_comparison rstp_priority_vector_is_superior(struct rstp_priority_vector *v1,
+enum vector_comparison compare_rstp_priority_vector(struct rstp_priority_vector *v1,
                                      struct rstp_priority_vector *v2);
 
 bool rstp_times_equal(struct rstp_times *t1, struct rstp_times *t2);
