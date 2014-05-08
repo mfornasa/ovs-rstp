@@ -630,12 +630,8 @@ record_priority(struct rstp_port *p)
 void
 record_times(struct rstp_port *p)
 {
-    p->port_times.message_age = p->msg_times.message_age;
-    p->port_times.max_age = p->msg_times.max_age;
-    p->port_times.forward_delay = p->msg_times.forward_delay;
-    if (p->msg_times.hello_time > 1) {
-        p->port_times.hello_time = p->msg_times.hello_time;
-    } else {
+    p->port_times = p->msg_times;
+    if (p->msg_times.hello_time == 0) {
         p->port_times.hello_time = 1;
     }
 }
