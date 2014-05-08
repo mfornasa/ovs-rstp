@@ -118,7 +118,6 @@ struct rstp;
 struct rstp_port;
 struct ofproto_rstp_settings;
 
-char *get_id_string_from_uint8_t(uint8_t *, int);
 const char *rstp_state_name(enum rstp_state);
 bool rstp_forward_in_state(enum rstp_state);
 bool rstp_learn_in_state(enum rstp_state);

@@ -58,24 +58,6 @@ void set_bridge_priority__(struct rstp *);
 void reinitialize_rstp__(struct rstp *);
 int is_port_number_taken__(struct rstp *, int);
 
-char *
-get_id_string_from_uint8_t(uint8_t *m, int length)
-{
-    int i;
-    char *string;
-    
-    string = malloc(length*3-1);
-    if (length != 0) {
-        sprintf(string,"%02X", m[0]);
-        for (i = 1; i< length; i++) {
-            sprintf(string+(i*3-1),":%02X", m[i]);
-        }
-        return string;
-    } else {
-        return NULL;
-    }
-}
-
 const char *
 rstp_state_name(enum rstp_state state)
 {
