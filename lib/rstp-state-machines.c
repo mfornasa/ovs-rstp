@@ -1731,31 +1731,16 @@ topology_change_sm(struct rstp_port *p)
       ((RD == RootBridgeID) && (RPCD == RootPathCost) && (D == designated_bridge_id) && (PD < designated_port_id)) ||
       ((D  == designated_bridge_id.BridgeAddress) && (PD == designated_port_id.PortNumber))
 */
+/* compare_rstp_priority_vector() compares two struct rstp_priority_vector and
+ * returns a value indicating if the first rstp_priority_vector is superior,
+ * same or inferior to the second one.
+ */
 enum vector_comparison
 compare_rstp_priority_vector(struct rstp_priority_vector *v1, struct rstp_priority_vector *v2)
 { 
     VLOG_DBG("v1: "RSTP_ID_FMT", %u, "RSTP_ID_FMT", %d", RSTP_ID_ARGS(v1->root_bridge_id), v1->root_path_cost, RSTP_ID_ARGS(v1->designated_bridge_id), v1->designated_port_id);
         VLOG_DBG("v2: "RSTP_ID_FMT", %u, "RSTP_ID_FMT", %d", RSTP_ID_ARGS(v2->root_bridge_id), v2->root_path_cost, RSTP_ID_ARGS(v2->designated_bridge_id), v2->designated_port_id);
-/*
-    if (memcmp(v1, v2, sizeof(struct rstp_priority_vector4)) < 0) {
-        VLOG_DBG("superior_absolute");       
-        return SUPERIOR_ABSOLUTE;
-    }
-    else if ((memcmp(v1, v2, sizeof(struct rstp_priority_vector4)) > 0) &&
-            (v1->designated_bridge_id == v2->designated_bridge_id) &&
-            (v1->designated_port_id == v2->designated_port_id)) {
-        VLOG_DBG("superior_same_des");
-        return SUPERIOR_SAME_DES;
-    }
-    else if (memcmp(v1, v2, sizeof(struct rstp_priority_vector)) == 0) {
-        VLOG_DBG("same");
-        return SAME;
-    }
-    else {
-        VLOG_DBG("not_superior");
-        return NOT_SUPERIOR;
-    }
-*/
+    
     if ((v1->root_bridge_id < v2->root_bridge_id) ||
         ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost < v2->root_path_cost)) ||
         ((v1->root_bridge_id == v2->root_bridge_id) && (v1->root_path_cost == v2->root_path_cost) && (v1->designated_bridge_id < v2->designated_bridge_id)) ||
