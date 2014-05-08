@@ -226,7 +226,7 @@ updt_roles_tree(struct rstp *r)
         root_path_cost = old_root_path_cost + p->port_path_cost;
         candidate_vector.root_path_cost = root_path_cost;
 
-        if ((candidate_vector.designated_bridge_id & 0xFFFFFFFFFFFFFF) == (r->bridge_priority.designated_bridge_id & 0xFFFFFFFFFFFFFF)) {
+        if ((candidate_vector.designated_bridge_id & 0xffffffffffffULL) == (r->bridge_priority.designated_bridge_id & 0xffffffffffffULL)) {
             break;
         }
         if (compare_rstp_priority_vector(&candidate_vector, &best_vector) == SUPERIOR) {

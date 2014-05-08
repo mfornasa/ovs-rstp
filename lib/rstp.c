@@ -273,7 +273,7 @@ rstp_set_bridge_priority(struct rstp *rstp, int new_priority)
         VLOG_DBG("%s: set bridge priority to %d", rstp->name, (new_priority / 4096) * 4096);
         ovs_mutex_lock(&mutex);
         rstp->priority = (new_priority / 4096) * 4096;
-        rstp->bridge_identifier &= 0xFFFFFFFFFFFFFF;
+        rstp->bridge_identifier &= 0xffffffffffffULL;
         rstp->bridge_identifier |= (uint64_t) ((new_priority / 4096) * 4096) << 48;
         set_bridge_priority__(rstp);
 
