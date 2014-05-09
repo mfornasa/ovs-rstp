@@ -92,12 +92,12 @@ typedef uint64_t rstp_identifier;
 
 #define RSTP_PORT_ID_FMT "%04"PRIx16
 
-/* Port state encoding [7.4] */
+/* Port state encoding [9.3.3] */
 enum rstp_state {
-    RSTP_DISABLED,
-    RSTP_LEARNING,
-    RSTP_FORWARDING,
-    RSTP_DISCARDING
+    RSTP_DISABLED = 1 << 0,
+    RSTP_LEARNING = 1 << 1,
+    RSTP_FORWARDING = 1 << 2,
+    RSTP_DISCARDING = 1 << 3
 };
 
 /* Force Protocol Version [17.13.4] */

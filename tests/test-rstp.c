@@ -570,7 +570,7 @@ test_rstp_main(int argc, char *argv[])
                 for (port_no = 0; port_no < b->n_ports; port_no++) {
                     struct rstp_port *p = rstp_get_port(rstp, port_no);
                     enum rstp_state state = rstp_port_get_state(p);
-                    if (!(state == RSTP_DISABLED || state == RSTP_FORWARDING)) {
+                    if (!(state & (RSTP_DISABLED | RSTP_FORWARDING))) {
                         warn("%s: root port %d in state %s",
                                 rstp_get_name(b->rstp), port_no,
                                 rstp_state_name(state));
