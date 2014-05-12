@@ -1295,7 +1295,6 @@ port_configure_rstp(const struct ofproto *ofproto, struct port *port,
 {
     const char *config_str;
     struct iface *iface;
-    int temp_num, done;
 
     if (!smap_get_bool(&port->cfg->other_config, "rstp-enable", true)) {
         port_s->enable = false;
@@ -1347,21 +1346,22 @@ port_configure_rstp(const struct ofproto *ofproto, struct port *port,
         port_s->port_num = port_num;
     }
     else {
+        int temp_num;
+
         if (*port_num_counter >= RSTP_MAX_PORTS) {
             VLOG_ERR("port %s: too many RSTP ports, disabling", port->name);
             port_s->enable = false;
             return;
         }
         /* If rstp-port-num is not specified, look for the first free one. */
-        done = 0;
         for (temp_num = 1; temp_num <= RSTP_MAX_PORTS; temp_num++) {
-            if (!bitmap_is_set(port_num_bitmap, temp_num) && !done) {
+            if (!bitmap_is_set(port_num_bitmap, temp_num)) {
                 bitmap_set1(port_num_bitmap, temp_num);
                 port_s->port_num = temp_num;
-                done = 1;
+                break;
             }
         }
-        if (done == 0) {
+        if (temp_num > RSTP_MAX_PORTS) {
             VLOG_ERR("port %s: no rstp-port-num available", port->name);
             port_s->enable = false;
             return;
