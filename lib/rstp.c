@@ -911,11 +911,7 @@ rstp_is_root_bridge(const struct rstp *rstp)
     bool is_root;
 
     ovs_mutex_lock(&mutex);
-    if (rstp->bridge_identifier == rstp->root_priority.designated_bridge_id) { 
-        is_root = true;
-    } else {
-        is_root = false;
-    }
+    is_root = rstp->bridge_identifier == rstp->root_priority.designated_bridge_id;
     ovs_mutex_unlock(&mutex);
     return is_root;
 }
