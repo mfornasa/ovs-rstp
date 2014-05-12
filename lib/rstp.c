@@ -934,25 +934,16 @@ struct rstp_port *
 rstp_get_root_port(struct rstp *rstp)
 {
     struct rstp_port *p;
-    int i, ret_val;
     
-    i = 0;
-    ret_val = -1;
     ovs_mutex_lock(&mutex);
     for (p = rstp->ports; p < &rstp->ports[ARRAY_SIZE(rstp->ports)]; p++) {
-        if (p->role == ROLE_ROOT && p->rstp_state != RSTP_DISABLED) {
-             ret_val = i;
-             p = &rstp->ports[ARRAY_SIZE(rstp->ports)];
+        if(p->port_id == rstp->root_port_id) {
+            ovs_mutex_unlock(&mutex);
+            return p;
         }
-        i++;
     }
     ovs_mutex_unlock(&mutex);
-    p = rstp->ports + ret_val;
-    if (ret_val != -1) {
-        return p;
-    } else {
-        return NULL;
-    }
+    return NULL;
 }
 
 /* Returns the port ID for 'p'. */
