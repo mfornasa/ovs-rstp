@@ -81,10 +81,10 @@ validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
     const struct rstp_bpdu *temp;
     
     temp = bpdu;
-    if (bpdu_size < 4 || ntohs(temp->protocol_identifier) != 0) {
+    if (bpdu_size < TOPOLOGY_CHANGE_NOTIFICATION_BPDU_SIZE || ntohs(temp->protocol_identifier) != 0) {
         return -1;
     } else {
-        if (temp->bpdu_type == CONFIGURATION_BPDU && bpdu_size >= 35 && (time_decode(temp->message_age) <  time_decode(temp->max_age))) {
+        if (temp->bpdu_type == CONFIGURATION_BPDU && bpdu_size >= CONFIGURATION_BPDU_SIZE && (time_decode(temp->message_age) <  time_decode(temp->max_age))) {
             if ((ntohll(temp->designated_bridge_id) != p->rstp->bridge_identifier) ||
                     ((ntohll(temp->designated_bridge_id) ==  p->rstp->bridge_identifier) &&
                      (ntohs(temp->designated_port_id) != p->port_id))) {
@@ -95,7 +95,7 @@ validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
             }
         } else if (temp->bpdu_type == TOPOLOGY_CHANGE_NOTIFICATION_BPDU) {
             return 0;
-        } else if (temp->bpdu_type == RAPID_SPANNING_TREE_BPDU && bpdu_size >= 36) {
+        } else if (temp->bpdu_type == RAPID_SPANNING_TREE_BPDU && bpdu_size >= RAPID_SPANNING_TREE_BPDU_SIZE) {
             return 0;
         }
         else {

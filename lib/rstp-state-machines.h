@@ -39,6 +39,12 @@ enum port_flag {
     PORT_DES = 3
 };
 
+enum bpdu_size {
+    CONFIGURATION_BPDU_SIZE = 35,
+    TOPOLOGY_CHANGE_NOTIFICATION_BPDU_SIZE = 4,
+    RAPID_SPANNING_TREE_BPDU_SIZE = 36
+};
+
 /* Per-Bridge State Machine */
 int port_role_selection_sm(struct rstp *);
 
