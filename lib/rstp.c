@@ -305,28 +305,18 @@ rstp_set_bridge_ageing_time(struct rstp *rstp, int new_ageing_time)
 void
 reinitialize_rstp__(struct rstp *rstp)
 {
-    char *name;
-    rstp_identifier bridge_address;
-    void *send_bpdu;
-    void *aux;
-    struct ovs_refcount ref_count;
-    struct list node;
+    struct rstp temp;
     struct rstp_port *p;
     
-    /* Copy name, bridge_address, ref_cnt, send_bpdu, aux, node */
-    name = xstrdup(rstp->name);
-    bridge_address = rstp->address;
-    memcpy(&ref_count, &rstp->ref_cnt, sizeof(struct ovs_refcount));
-    send_bpdu = rstp->send_bpdu;
-    aux = rstp->aux;
-    node = rstp->node;
+    /* Copy rstp in temp */
+    temp = *rstp;
     /* stop and clear rstp */
     memset(rstp, 0, sizeof(struct rstp));
 
     /* Initialize rstp. */
-    rstp->name = xstrdup(name);
+    rstp->name = temp.name;
     /* Set bridge address. */
-    rstp_set_bridge_address(rstp, bridge_address);
+    rstp_set_bridge_address(rstp, temp.address);
     /* Set default parameters values. */
     rstp_set_bridge_priority(rstp, RSTP_DEFAULT_PRIORITY);
     rstp_set_bridge_ageing_time(rstp, RSTP_DEFAULT_AGEING_TIME);
@@ -338,9 +328,9 @@ reinitialize_rstp__(struct rstp *rstp)
     rstp_set_bridge_times(rstp, RSTP_DEFAULT_BRIDGE_FORWARD_DELAY,
                           RSTP_BRIDGE_HELLO_TIME, RSTP_DEFAULT_BRIDGE_MAX_AGE, 0);
 
-    rstp->send_bpdu = send_bpdu;
-    rstp->aux = aux;
-    rstp->node = node;
+    rstp->send_bpdu = temp.send_bpdu;
+    rstp->aux = temp.aux;
+    rstp->node = temp.node;
     rstp->changes = false;
     rstp->begin = true;
     rstp->first_changed_port = &rstp->ports[ARRAY_SIZE(rstp->ports)];
@@ -349,7 +339,7 @@ reinitialize_rstp__(struct rstp *rstp)
         rstp_initialize_port(p);
         rstp_port_set_state(p, RSTP_DISABLED);
     }
-    memcpy(&rstp->ref_cnt, &ref_count, sizeof(struct ovs_refcount));
+    rstp->ref_cnt = temp.ref_cnt;
 }
 
 /* Sets the force protocol version parameter. */
