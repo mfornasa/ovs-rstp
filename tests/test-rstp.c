@@ -501,7 +501,8 @@ test_rstp_main(int argc, char *argv[])
                         }
                         get_token();
 
-                        path_cost = match(":") ? must_get_int() : RSTP_DEFAULT_PORT_PATH_COST;
+                        path_cost = match(":") ? must_get_int() :
+                                                 RSTP_DEFAULT_PORT_PATH_COST;
                         if (port_no < bridge->n_ports) {
                             rstp_port_set_path_cost(p, path_cost);
                             rstp_port_set_mac_operational(p, true);

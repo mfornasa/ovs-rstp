@@ -1152,7 +1152,8 @@ static bool
 xport_rstp_should_manage_bpdu(const struct xport *xport)
 {
     struct rstp_port *rp = xport_get_rstp_port(xport);
-    return rstp_should_manage_bpdu(rp ? rstp_port_get_state(rp) : RSTP_DISABLED);
+    return rstp_should_manage_bpdu(rp ? rstp_port_get_state(rp) :
+                                   RSTP_DISABLED);
 }
 
 static void
@@ -2173,9 +2174,11 @@ process_special(struct xlate_ctx *ctx, const struct flow *flow,
             lacp_process_packet(xport->xbundle->lacp, xport->ofport, packet);
         }
         return SLOW_LACP;
-    } else if ((xbridge->stp || xbridge->rstp) && stp_should_process_flow(flow, wc)) {
+    } else if ((xbridge->stp || xbridge->rstp) &&
+               stp_should_process_flow(flow, wc)) {
         if (packet) {
-            xbridge->stp ? stp_process_packet(xport, packet) : rstp_process_packet(xport, packet);
+            xbridge->stp ? stp_process_packet(xport, packet) :
+                           rstp_process_packet(xport, packet);
         }
         return SLOW_STP;
     } else {
@@ -2218,7 +2221,7 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
                             "skipping bpdu output");
                 }
                 return;
-            } else if (!xport_stp_forward_state(xport) && 
+            } else if (!xport_stp_forward_state(xport) &&
                         !xport_rstp_forward_state(xport)) {
                 if (ctx->xbridge->stp != NULL) {
                         xlate_report(ctx, "STP not in forwarding state, "
@@ -2259,7 +2262,8 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
                 xlate_table_action(ctx, flow->in_port.ofp_port, 0, true, true);
             } else {
                 /* Forwarding is disabled by STP and RSTP.  Let OFPP_NORMAL and
-                 * the learning action look at the packet, then drop it. */
+                 * the learning action look at the packet, then drop it.
+                 */
                 struct flow old_base_flow = ctx->base_flow;
                 size_t old_size = ofpbuf_size(&ctx->xout->odp_actions);
                 mirror_mask_t old_mirrors = ctx->xout->mirrors;
@@ -3153,8 +3157,8 @@ may_receive(const struct xport *xport, struct xlate_ctx *ctx)
      * disabled.  If just learning is enabled, we need to have
      * OFPP_NORMAL and the learning action have a look at the packet
      * before we can drop it. */
-    if (!xport_stp_forward_state(xport) && !xport_stp_learn_state(xport)
-        && !xport_rstp_forward_state(xport) && !xport_rstp_learn_state(xport)) {
+    if (!xport_stp_forward_state(xport) && !xport_stp_learn_state(xport) &&
+        !xport_rstp_forward_state(xport) && !xport_rstp_learn_state(xport)) {
         return false;
     }
 

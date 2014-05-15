@@ -109,8 +109,8 @@ enum vector_comparison {
     SAME = 2
 };
 
-enum vector_comparison compare_rstp_priority_vector(struct rstp_priority_vector *v1,
-                                     struct rstp_priority_vector *v2);
+enum vector_comparison compare_rstp_priority_vector(
+    struct rstp_priority_vector *v1, struct rstp_priority_vector *v2);
 
 bool rstp_times_equal(struct rstp_times *t1, struct rstp_times *t2);
 

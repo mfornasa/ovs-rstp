@@ -51,7 +51,7 @@ struct ofpbuf;
 #define RSTP_STEP_PORT_PRIORITY 16
 #define RSTP_DEFAULT_PORT_PRIORITY 128
 
-/* Performance parameters defaults. [Table 7-5] and [Table 17-1] 
+/* Performance parameters defaults. [Table 7-5] and [Table 17-1]
  * These values are expressed in seconds.
  */
 #define RSTP_DEFAULT_AGEING_TIME 300
@@ -80,8 +80,9 @@ struct ofpbuf;
 #define RSTP_DEFAULT_PORT_PATH_COST 200000
 
 /* RSTP Bridge identifier [9.2.5].  Top four most significant bits are a
- * priority value. The next most significant twelve bits are a locally assigned
- * system ID extension. Bottom 48 bits are MAC address of bridge. */
+ * priority value. The next most significant twelve bits are a locally
+ * assigned system ID extension. Bottom 48 bits are MAC address of bridge.
+ */
 typedef uint64_t rstp_identifier;
 
 #define RSTP_ID_FMT "%01"PRIx8".%03"PRIx16".%012"PRIx64
@@ -148,15 +149,16 @@ void rstp_set_bridge_address(struct rstp *, rstp_identifier bridge_address);
 void rstp_set_bridge_priority(struct rstp *, int new_priority);
 void rstp_set_bridge_ageing_time(struct rstp *, int new_ageing_time);
 void rstp_set_bridge_force_protocol_version(struct rstp *,
-                                            enum rstp_force_protocol_version new_force_protocol_version);
+                enum rstp_force_protocol_version new_force_protocol_version);
 void rstp_set_bridge_hello_time(struct rstp *);
 void rstp_set_bridge_max_age(struct rstp *, int new_max_age);
 void rstp_set_bridge_forward_delay(struct rstp *, int new_forward_delay);
 void rstp_set_bridge_transmit_hold_count(struct rstp *,
                                         int new_transmit_hold_count);
 void rstp_set_bridge_migrate_time(struct rstp *);
-void rstp_set_bridge_times(struct rstp *, int new_forward_delay, int new_hello_time,
-                          int new_max_age, int new_message_age);
+void rstp_set_bridge_times(struct rstp *, int new_forward_delay,
+                           int new_hello_time, int new_max_age,
+                           int new_message_age);
 
 /* Port setters */
 void rstp_port_set_priority(struct rstp_port *, int new_port_priority);
@@ -191,8 +193,8 @@ struct rstp_port *rstp_get_port(struct rstp *, int port_no);
 uint16_t rstp_port_get_id(const struct rstp_port *);
 enum rstp_state rstp_port_get_state(const struct rstp_port *);
 enum rstp_port_role rstp_port_get_role(const struct rstp_port *);
-void rstp_port_get_counts(const struct rstp_port *, int *tx_count, int *rx_count,
-                          int *error_count, int *uptime);
+void rstp_port_get_counts(const struct rstp_port *, int *tx_count,
+                          int *rx_count, int *error_count, int *uptime);
 void * rstp_port_get_aux(struct rstp_port *);
 
 #endif /* rstp.h */

@@ -2380,7 +2380,7 @@ br_refresh_rstp_status(struct bridge *br)
     }
     smap_add_format(&smap, "rstp_bridge_id", RSTP_ID_FMT,
                     RSTP_ID_ARGS(status.bridge_id));
-    smap_add_format(&smap, "rstp_root_path_cost", "%d", 
+    smap_add_format(&smap, "rstp_root_path_cost", "%d",
                     status.root_path_cost);
     smap_add_format(&smap, "rstp_root_id", RSTP_ID_FMT,
                     RSTP_ID_ARGS(status.root_id));

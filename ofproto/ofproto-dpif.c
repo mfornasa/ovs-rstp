@@ -165,7 +165,7 @@ struct ofport_dpif {
     enum stp_state stp_state;   /* Always STP_DISABLED if STP not in use. */
     long long int stp_state_entered;
 
-    /*Rapid Spanning Tree. */
+    /* Rapid Spanning Tree. */
     struct rstp_port *rstp_port; /* Rapid Spanning Tree Protocol, if any. */
     enum rstp_state rstp_state; /* Always RSTP_DISABLED if RSTP not in use. */
 
@@ -310,7 +310,7 @@ struct ofproto_dpif {
     struct stp *stp;
     long long int stp_last_tick;
 
-    /*Rapid Spanning Tree. */
+    /* Rapid Spanning Tree. */
     struct rstp *rstp;
     long long int rstp_last_tick;
 
@@ -2029,7 +2029,7 @@ update_rstp_port_state(struct ofport_dpif *ofport)
     if (ofport->rstp_state != state) {
         enum ofputil_port_state of_state;
         bool fwd_change;
-        
+
         VLOG_DBG_RL(&rl, "port %s: RSTP state changed from %s to %s",
                 netdev_get_name(ofport->up.netdev),
                 rstp_state_name(ofport->rstp_state),
@@ -2080,10 +2080,14 @@ rstp_run(struct ofproto_dpif *ofproto)
                 update_rstp_port_state(ofport);
             }
         }
-        /* FIXME: This check should be done on-event (i.e., when setting p->fdb_flush) and not periodically. */
+        /* FIXME: This check should be done on-event (i.e., when setting
+         * p->fdb_flush) and not periodically.
+         */
         if (rstp_check_and_reset_fdb_flush(ofproto->rstp)) {
             ovs_rwlock_wrlock(&ofproto->ml->rwlock);
-            /* FIXME: RSTP should be able to flush the entries pertaining to a single port, not the whole table. */
+            /* FIXME: RSTP should be able to flush the entries pertaining to a
+             * single port, not the whole table.
+             */
             mac_learning_flush(ofproto->ml);
             ovs_rwlock_unlock(&ofproto->ml->rwlock);
         }
@@ -2095,7 +2099,7 @@ static int
 set_stp(struct ofproto *ofproto_, const struct ofproto_stp_settings *s)
 {
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(ofproto_);
-    
+
     /* Only revalidate flows if the configuration changed. */
     if (!s != !ofproto->stp) {
         ofproto->backer->need_revalidate = REV_RECONFIGURE;
@@ -2158,7 +2162,7 @@ update_stp_port_state(struct ofport_dpif *ofport)
     if (ofport->stp_state != state) {
         enum ofputil_port_state of_state;
         bool fwd_change;
-        
+
         VLOG_DBG_RL(&rl, "port %s: STP state changed from %s to %s",
                     netdev_get_name(ofport->up.netdev),
                     stp_state_name(ofport->stp_state),
@@ -2202,7 +2206,7 @@ set_stp_port(struct ofport *ofport_,
     struct ofport_dpif *ofport = ofport_dpif_cast(ofport_);
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(ofport->up.ofproto);
     struct stp_port *sp = ofport->stp_port;
-    
+
     if (!s || !s->enable) {
         if (sp) {
             ofport->stp_port = NULL;
@@ -2284,7 +2288,7 @@ stp_run(struct ofproto_dpif *ofproto)
         }
         while (stp_get_changed_port(ofproto->stp, &sp)) {
             struct ofport_dpif *ofport = stp_port_get_aux(sp);
-            
+
             if (ofport) {
                 update_stp_port_state(ofport);
             }
@@ -3945,7 +3949,7 @@ ofproto_dpif_send_packet(const struct ofport_dpif *ofport, struct ofpbuf *packet
     ovs_mutex_unlock(&ofproto->stats_mutex);
     return error;
 }
-
+
 static bool
 set_frag_handling(struct ofproto *ofproto_,
                   enum ofp_config_flags frag_handling)
