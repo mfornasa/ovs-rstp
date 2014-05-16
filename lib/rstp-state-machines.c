@@ -224,7 +224,7 @@ updt_roles_tree(struct rstp *r)
         uint32_t old_root_path_cost;
         uint32_t root_path_cost;
         struct rstp_port *p = rstp_get_port(r, port_no);
-        if (p->info_is !=INFO_IS_RECEIVED) {
+        if (p->info_is != INFO_IS_RECEIVED) {
             continue;
         }
         /* [17.6] */
@@ -728,10 +728,10 @@ tx_config(struct rstp_port *p)
     bpdu.hello_time = time_encode(p->designated_times.hello_time);
     bpdu.forward_delay = time_encode(p->designated_times.forward_delay);
     bpdu.flags = 0;
-    if (p->tc_while !=0) {
+    if (p->tc_while != 0) {
         bpdu.flags |= BPDU_FLAG_TOPCHANGE;
     }
-    if (p->tc_ack !=0) {
+    if (p->tc_ack != 0) {
         bpdu.flags |= BPDU_FLAG_TOPCHANGEACK;
     }
     rstp_send_bpdu(p, &bpdu, sizeof(struct rstp_bpdu));
@@ -759,14 +759,14 @@ tx_rstp(struct rstp_port *p)
     bpdu.flags = 0;
     switch (p->role) {
     case ROLE_ROOT:
-        bpdu.flags = PORT_ROOT<<2;
+        bpdu.flags = PORT_ROOT << 2;
         break;
     case ROLE_DESIGNATED:
-        bpdu.flags = PORT_DES<<2;
+        bpdu.flags = PORT_DES << 2;
         break;
     case ROLE_ALTERNATE:
     case ROLE_BACKUP:
-        bpdu.flags = PORT_ALT_BACK<<2;
+        bpdu.flags = PORT_ALT_BACK << 2;
         break;
     case ROLE_DISABLED:
         /* should not happen! */
@@ -779,7 +779,7 @@ tx_rstp(struct rstp_port *p)
     if (p->proposing) {
         bpdu.flags |= BPDU_FLAG_PROPOSAL;
     }
-    if (p->tc_while !=0) {
+    if (p->tc_while != 0) {
         bpdu.flags |= BPDU_FLAG_TOPCHANGE;
     }
     if (p->learning) {
@@ -830,8 +830,8 @@ port_transmit_sm(struct rstp_port *p)
         p->port_transmit_sm_state = PORT_TRANSMIT_SM_IDLE_EXEC;
         break;
     case PORT_TRANSMIT_SM_TRANSMIT_PERIODIC_EXEC:
-        p->new_info = p->new_info || (p->role==ROLE_DESIGNATED ||
-                      (p->role==ROLE_ROOT && p->tc_while!=0));
+        p->new_info = p->new_info || (p->role == ROLE_DESIGNATED ||
+                      (p->role == ROLE_ROOT && p->tc_while != 0));
         p->port_transmit_sm_state = PORT_TRANSMIT_SM_TRANSMIT_PERIODIC;
         /* no break */
     case PORT_TRANSMIT_SM_TRANSMIT_PERIODIC:
@@ -1393,7 +1393,7 @@ port_role_transition_sm(struct rstp_port *p)
                     PORT_ROLE_TRANSITION_SM_ROOT_LEARN_EXEC;
                 break;
             }
-            if (((p->fd_while==0) || ((re_rooted(p) && (p->rb_while == 0)) &&
+            if (((p->fd_while == 0) || ((re_rooted(p) && (p->rb_while == 0)) &&
                     (r->rstp_version))) && p->learn && !p->forward) {
                 p->port_role_transition_sm_state =
                     PORT_ROLE_TRANSITION_SM_ROOT_FORWARD_EXEC;
@@ -1461,13 +1461,13 @@ port_role_transition_sm(struct rstp_port *p)
         }
         if (p->selected && !p->updt_info) {
             if (((p->sync && !p->synced) || (p->re_root &&
-                 (p->rr_while !=0)) || p->disputed) &&
+                 (p->rr_while != 0)) || p->disputed) &&
                 !p->oper_edge && (p->learn || p->forward)) {
             p->port_role_transition_sm_state =
                 PORT_ROLE_TRANSITION_SM_DESIGNATED_DISCARD_EXEC;
             }
-            if (((p->fd_while==0)|| p->agreed || p->oper_edge) &&
-                ((p->rr_while==0) || !p->re_root) &&
+            if (((p->fd_while == 0)|| p->agreed || p->oper_edge) &&
+                ((p->rr_while == 0) || !p->re_root) &&
                     !p->sync && !p->learn) {
                 p->port_role_transition_sm_state =
                     PORT_ROLE_TRANSITION_SM_DESIGNATED_LEARN_EXEC;
@@ -1829,7 +1829,7 @@ topology_change_sm(struct rstp_port *p)
         p->topology_change_sm_state = TOPOLOGY_CHANGE_SM_ACTIVE;
         /* no break */
     case TOPOLOGY_CHANGE_SM_ACTIVE:
-        if (((p->role!=ROLE_ROOT) && (p->role!=ROLE_DESIGNATED)) ||
+        if (((p->role != ROLE_ROOT) && (p->role != ROLE_DESIGNATED)) ||
                 p->oper_edge) {
             p->topology_change_sm_state = TOPOLOGY_CHANGE_SM_LEARNING_EXEC;
         }
