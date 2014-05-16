@@ -175,8 +175,9 @@ enum topology_change_state_machine {
 
 /* [17.18.4, 17.13, Table 17-1]. */
 struct rstp_times {
-    /* [17.13.5 - Bridge Forward Delay] The delay used by STP Bridges (17.4)
-     * to transition Root and Designated Ports to Forwarding (Table 17-1).
+    /* [17.13.5 - Bridge Forward Delay] The delay (expressed in seconds) used
+     * by STP Bridges (17.4) to transition Root and Designated Ports to
+     * Forwarding (Table 17-1).
      * Default = 15.0 s. Values in range 4.0 - 30.0
      */
     uint16_t forward_delay;

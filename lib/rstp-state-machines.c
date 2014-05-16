@@ -692,6 +692,10 @@ updt_rcvd_info_while(struct rstp_port *p)
      }
 }
 
+/* Times are internally held in seconds, while the protocol uses 1/256 seconds.
+ * time_encode() is used to convert time values sent in bpdus, while
+ * time_decode() is used to convert time values received in bpdus.
+ */
 ovs_be16
 time_encode(uint8_t value)
 {
@@ -701,7 +705,7 @@ time_encode(uint8_t value)
 uint8_t
 time_decode(ovs_be16 encoded)
 {
-    return (ntohs(encoded) / 256);
+    return ntohs(encoded) / 256;
 }
 
 /* [17.21.19] */
@@ -709,8 +713,6 @@ void
 tx_config(struct rstp_port *p)
 {
     struct rstp_bpdu bpdu;
-
-    memset(&bpdu, 0, sizeof(struct rstp_bpdu));
 
     bpdu.protocol_identifier = htons(0);
     bpdu.protocol_version_identifier = 0;
@@ -725,6 +727,7 @@ tx_config(struct rstp_port *p)
     bpdu.max_age = time_encode(p->designated_times.max_age);
     bpdu.hello_time = time_encode(p->designated_times.hello_time);
     bpdu.forward_delay = time_encode(p->designated_times.forward_delay);
+    bpdu.flags = 0;
     if (p->tc_while !=0) {
         bpdu.flags |= BPDU_FLAG_TOPCHANGE;
     }
@@ -740,8 +743,6 @@ tx_rstp(struct rstp_port *p)
 {
     struct rstp_bpdu bpdu;
 
-    memset(&bpdu, 0, sizeof(struct rstp_bpdu));
-
     bpdu.protocol_identifier = htons(0);
     bpdu.protocol_version_identifier = 2;
     bpdu.bpdu_type = RAPID_SPANNING_TREE_BPDU;
@@ -755,6 +756,7 @@ tx_rstp(struct rstp_port *p)
     bpdu.max_age = time_encode(p->designated_times.max_age);
     bpdu.hello_time = time_encode(p->designated_times.hello_time);
     bpdu.forward_delay = time_encode(p->designated_times.forward_delay);
+    bpdu.flags = 0;
     switch (p->role) {
     case ROLE_ROOT:
         bpdu.flags = PORT_ROOT<<2;
@@ -786,6 +788,7 @@ tx_rstp(struct rstp_port *p)
     if (p->forwarding) {
         bpdu.flags |= BPDU_FLAG_FORWARDING;
     }
+    bpdu.version1_length = 0;
     rstp_send_bpdu(p, &bpdu, sizeof(struct rstp_bpdu));
 }
 
