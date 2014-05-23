@@ -725,7 +725,9 @@ struct rstp {
     /* Per-bridge state machines state */
     enum port_role_selection_state_machine port_role_selection_sm_state;
 
-    /* Bridge MAC address */
+    /* Bridge MAC address 
+     * (stored in the least significant 48 bits of rstp_identifier).
+     */
     rstp_identifier address; /* [7.12.5] */
 
     /* Bridge priority */
