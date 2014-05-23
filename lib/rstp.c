@@ -572,15 +572,15 @@ rstp_convert_speed_to_cost(unsigned int speed)
 {
     uint32_t value;
 
-    value = speed >=  10000000 ? 2 /* 10 Tb/s. */
-        : speed >= 1000000 ? 20 /* 1 Tb/s. */
-        : speed >= 100000 ? 200 /* 100 Gb/s. */
-        : speed >= 10000 ? 2000 /* 10 Gb/s. */
-        : speed >= 1000 ? 20000 /* 1 Gb/s. */
-        : speed >= 100 ? 200000 /* 100 Mb/s. */
-        : speed >= 10 ? 2000000 /* 10 Mb/s. */
-        : speed >= 1 ? 20000000 /* 1 Mb/s. */
-        : RSTP_DEFAULT_PORT_PATH_COST; /* 100 Mb/s. */
+    value = speed >= 10000000 ? 2 /* 10 Tb/s. */
+          : speed >= 1000000 ? 20 /* 1 Tb/s. */
+          : speed >= 100000 ? 200 /* 100 Gb/s. */
+          : speed >= 10000 ? 2000 /* 10 Gb/s. */
+          : speed >= 1000 ? 20000 /* 1 Gb/s. */
+          : speed >= 100 ? 200000 /* 100 Mb/s. */
+          : speed >= 10 ? 2000000 /* 10 Mb/s. */
+          : speed >= 1 ? 20000000 /* 1 Mb/s. */
+          : RSTP_DEFAULT_PORT_PATH_COST; /* 100 Mb/s. */
 
     return value;
 }
