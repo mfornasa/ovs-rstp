@@ -2720,10 +2720,12 @@ bridge_run(void)
                 struct port *port;
 
                 br_refresh_stp_status(br);
+                br_refresh_rstp_status(br);
                 HMAP_FOR_EACH (port, hmap_node, &br->ports) {
                     struct iface *iface;
 
                     port_refresh_stp_status(port);
+                    port_refresh_rstp_status(port);
                     LIST_FOR_EACH (iface, port_elem, &port->ifaces) {
                         iface_refresh_netdev_status(iface);
                         iface_refresh_ofproto_status(iface);

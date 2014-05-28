@@ -124,7 +124,6 @@ rstp_unref(struct rstp *rstp)
         ovs_mutex_unlock(&mutex);
         free(rstp->name);
         free(rstp);
-        seq_change(connectivity_seq_get());
     }
 }
 
@@ -580,7 +579,8 @@ rstp_port_set_port_number(struct rstp_port *rstp_port,
      * available port number.
      */
     if ((new_port_number >= 1 && new_port_number <= RSTP_MAX_PORTS) &&
-        (!is_port_number_taken__(rstp_port->rstp, new_port_number, rstp_port))) {
+        (!is_port_number_taken__(rstp_port->rstp, new_port_number, rstp_port)))
+    {
         VLOG_DBG("%s: set new RSTP port number %d -> %d", rstp->name,
                      rstp_port->port_number, new_port_number);
         rstp_port->port_number =  new_port_number;
@@ -868,6 +868,7 @@ rstp_delete_port(struct rstp_port *p) {
     VLOG_DBG("%s: removed port "RSTP_PORT_ID_FMT"", rstp->name, p->port_id);
     free(p);
     ovs_mutex_unlock(&mutex);
+    seq_change(connectivity_seq_get());
 }
 
 /* Sets the port Admin Edge parameter. */

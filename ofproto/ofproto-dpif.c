@@ -2320,6 +2320,8 @@ set_rstp_port(struct ofport *ofport_,
     struct ofport_dpif *ofport = ofport_dpif_cast(ofport_);
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(ofport->up.ofproto);
     struct rstp_port *rp = ofport->rstp_port;
+    int stp_port;
+
     if (!s || !s->enable) {
         if (rp) {
             ofport->rstp_port = NULL;
@@ -2331,18 +2333,19 @@ set_rstp_port(struct ofport *ofport_,
                   && ofport == rstp_port_get_aux(rp)) {
         /* The port-id changed, so disable the old one if it's not
          * already in use by another port. */
-
-        int stp_port = ofport->stp_port
-            ? stp_port_no(ofport->stp_port)
-            : -1;
-        xlate_ofport_set(ofproto, ofport->bundle, ofport,
-                ofport->up.ofp_port, ofport->odp_port,
-                ofport->up.netdev, ofport->cfm,
-                ofport->bfd, ofport->peer, stp_port,
-                s->port_num,
-                ofport->qdscp, ofport->n_qdscp,
-                ofport->up.pp.config, ofport->up.pp.state,
-                ofport->is_tunnel, ofport->may_enable);
+        if (s->port_num != 0) {
+            xlate_txn_start();
+            stp_port = ofport->stp_port ? stp_port_no(ofport->stp_port) : -1;
+            xlate_ofport_set(ofproto, ofport->bundle, ofport,
+                    ofport->up.ofp_port, ofport->odp_port,
+                    ofport->up.netdev, ofport->cfm,
+                    ofport->bfd, ofport->peer, stp_port,
+                    s->port_num,
+                    ofport->qdscp, ofport->n_qdscp,
+                    ofport->up.pp.config, ofport->up.pp.state,
+                    ofport->is_tunnel, ofport->may_enable);
+            xlate_txn_commit();
+        }
 
         rstp_port_set_aux(rp, ofport);
         rstp_port_set_priority(rp, s->priority);

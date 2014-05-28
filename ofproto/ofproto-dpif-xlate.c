@@ -346,6 +346,7 @@ static void xlate_xbridge_set(struct xbridge *xbridge,
                               struct rule_dpif *miss_rule,
                               struct rule_dpif *no_packet_in_rule,
                               const struct mac_learning *ml, struct stp *stp,
+                              struct rstp *rstp,
                               const struct mbridge *mbridge,
                               const struct dpif_sflow *sflow,
                               const struct dpif_ipfix *ipfix,
@@ -363,6 +364,7 @@ static void xlate_xbundle_set(struct xbundle *xbundle,
 static void xlate_xport_set(struct xport *xport, odp_port_t odp_port,
                             const struct netdev *netdev, const struct cfm *cfm,
                             const struct bfd *bfd, int stp_port_no,
+                            int rstp_port_no,
                             enum ofputil_port_config config,
                             enum ofputil_port_state state, bool is_tunnel,
                             bool may_enable);
@@ -495,13 +497,14 @@ xlate_xbundle_set(struct xbundle *xbundle,
 static void
 xlate_xport_set(struct xport *xport, odp_port_t odp_port,
                 const struct netdev *netdev, const struct cfm *cfm,
-                const struct bfd *bfd, int stp_port_no,
+                const struct bfd *bfd, int stp_port_no, int rstp_port_no,
                 enum ofputil_port_config config, enum ofputil_port_state state,
                 bool is_tunnel, bool may_enable)
 {
     xport->config = config;
     xport->state = state;
     xport->stp_port_no = stp_port_no;
+    xport->rstp_port_no = rstp_port_no;
     xport->is_tunnel = is_tunnel;
     xport->may_enable = may_enable;
     xport->odp_port = odp_port;
@@ -535,9 +538,10 @@ xlate_xbridge_copy(struct xbridge *xbridge)
     xlate_xbridge_set(new_xbridge,
                       xbridge->dpif, xbridge->miss_rule,
                       xbridge->no_packet_in_rule, xbridge->ml, xbridge->stp,
-                      xbridge->mbridge, xbridge->sflow, xbridge->ipfix,
-                      xbridge->netflow, xbridge->frag, xbridge->forward_bpdu,
-                      xbridge->has_in_band, xbridge->enable_recirc,
+                      xbridge->rstp, xbridge->mbridge, xbridge->sflow,
+                      xbridge->ipfix, xbridge->netflow, xbridge->frag,
+                      xbridge->forward_bpdu, xbridge->has_in_band,
+                      xbridge->enable_recirc,
                       xbridge->variable_length_userdata,
                       xbridge->max_mpls_depth);
     LIST_FOR_EACH (xbundle, list_node, &xbridge->xbundles) {
@@ -583,8 +587,9 @@ xlate_xport_copy(struct xbridge *xbridge, struct xbundle *xbundle,
     xlate_xport_init(new_xcfg, new_xport);
 
     xlate_xport_set(new_xport, xport->odp_port, xport->netdev, xport->cfm,
-                    xport->bfd, xport->stp_port_no, xport->config, xport->state,
-                    xport->is_tunnel, xport->may_enable);
+                    xport->bfd, xport->stp_port_no, xport->rstp_port_no,
+                    xport->config, xport->state, xport->is_tunnel,
+                    xport->may_enable);
 
     if (xport->peer) {
         struct xport *peer = xport_lookup(new_xcfg, xport->peer->ofport);
@@ -685,6 +690,7 @@ xlate_ofproto_set(struct ofproto_dpif *ofproto, const char *name,
                   struct dpif *dpif, struct rule_dpif *miss_rule,
                   struct rule_dpif *no_packet_in_rule,
                   const struct mac_learning *ml, struct stp *stp,
+                  struct rstp *rstp,
                   const struct mbridge *mbridge,
                   const struct dpif_sflow *sflow,
                   const struct dpif_ipfix *ipfix,
@@ -710,7 +716,7 @@ xlate_ofproto_set(struct ofproto_dpif *ofproto, const char *name,
     xbridge->name = xstrdup(name);
 
     xlate_xbridge_set(xbridge, dpif, miss_rule, no_packet_in_rule, ml, stp,
-                      mbridge, sflow, ipfix, netflow, frag, forward_bpdu,
+                      rstp, mbridge, sflow, ipfix, netflow, frag, forward_bpdu,
                       has_in_band, enable_recirc, variable_length_userdata,
                       max_mpls_depth);
 }
