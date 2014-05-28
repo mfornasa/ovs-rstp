@@ -47,8 +47,7 @@
 VLOG_DEFINE_THIS_MODULE(rstp_sm);
 
 void decrement_timer(uint16_t *);
-static void rstp_send_bpdu(struct rstp_port *, const void *, size_t)
-    OVS_REQUIRES(mutex);
+static void rstp_send_bpdu(struct rstp_port *, const void *, size_t);
 
 void
 process_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
@@ -122,26 +121,28 @@ validate_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
  */
 #define MAX_RSTP_ITERATIONS 1000 /* safeguard */
 int
-move_rstp(struct rstp *rstp )
+move_rstp(struct rstp *rstp)
 {
-    int port_no, num_iterations;
+    struct rstp_port *p;
+    int num_iterations;
     num_iterations = 0;
 
     while (rstp->changes == true && num_iterations < MAX_RSTP_ITERATIONS) {
         VLOG_DBG("%s: move_rstp()", rstp->name);
         rstp->changes = false;
         port_role_selection_sm(rstp);
-        for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-            struct rstp_port *p = rstp_get_port(rstp, port_no);
-            if (p->rstp_state != RSTP_DISABLED) {
-                port_receive_sm(p);
-                bridge_detection_sm(p);
-                port_information_sm(p);
-                port_role_transition_sm(p);
-                port_state_transition_sm(p);
-                topology_change_sm(p);
-                port_transmit_sm(p);
-                port_protocol_migration_sm(p);
+        if (rstp->ports_count > 0) {
+            LIST_FOR_EACH (p, node, rstp->ports) {
+                if (p->rstp_state != RSTP_DISABLED) {
+                    port_receive_sm(p);
+                    bridge_detection_sm(p);
+                    port_information_sm(p);
+                    port_role_transition_sm(p);
+                    port_state_transition_sm(p);
+                    topology_change_sm(p);
+                    port_transmit_sm(p);
+                    port_protocol_migration_sm(p);
+                }
             }
         }
         num_iterations++;
@@ -156,20 +157,21 @@ move_rstp(struct rstp *rstp )
 
 void decrease_rstp_port_timers(struct rstp *r)
 {
-    int port_no;
+    struct rstp_port *p;
 
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        decrement_timer(&p->hello_when);
-        decrement_timer(&p->tc_while);
-        decrement_timer(&p->fd_while);
-        decrement_timer(&p->rcvd_info_while);
-        decrement_timer(&p->rr_while);
-        decrement_timer(&p->rb_while);
-        decrement_timer(&p->mdelay_while);
-        decrement_timer(&p->edge_delay_while);
-        decrement_timer(&p->tx_count);
-        p->uptime+=1;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p, node, r->ports) {
+            decrement_timer(&p->hello_when);
+            decrement_timer(&p->tc_while);
+            decrement_timer(&p->fd_while);
+            decrement_timer(&p->rcvd_info_while);
+            decrement_timer(&p->rr_while);
+            decrement_timer(&p->rb_while);
+            decrement_timer(&p->mdelay_while);
+            decrement_timer(&p->edge_delay_while);
+            decrement_timer(&p->tx_count);
+            p->uptime+=1;
+        }
     }
     r->changes = true;
     move_rstp(r);
@@ -189,29 +191,31 @@ decrement_timer(uint16_t *timer)
 void
 updt_role_disabled_tree(struct rstp *r)
 {
-    int port_no;
+    struct rstp_port *p;
 
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        p->selected_role = ROLE_DISABLED;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p, node, r->ports) {
+            p->selected_role = ROLE_DISABLED;
+        }
     }
 }
 
 void
 clear_reselect_tree(struct rstp *r)
 {
-    int port_no;
+    struct rstp_port *p;
 
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        p->reselect = false;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p, node, r->ports) {
+            p->reselect = false;
+        }
     }
 }
 
 void
 updt_roles_tree(struct rstp *r)
 {
-    int port_no;
+    struct rstp_port *p;
     int vsel;
     struct rstp_priority_vector best_vector, candidate_vector;
 
@@ -220,31 +224,32 @@ updt_roles_tree(struct rstp *r)
     /* Letter c1) */
     r->root_times = r->bridge_times;
     /* Letters a) b) c) */
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        uint32_t old_root_path_cost;
-        uint32_t root_path_cost;
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        if (p->info_is != INFO_IS_RECEIVED) {
-            continue;
-        }
-        /* [17.6] */
-        candidate_vector = p->port_priority;
-        candidate_vector.bridge_port_id = p->port_id;
-        old_root_path_cost = candidate_vector.root_path_cost;
-        root_path_cost = old_root_path_cost + p->port_path_cost;
-        candidate_vector.root_path_cost = root_path_cost;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p, node, r->ports) {
+            uint32_t old_root_path_cost;
+            uint32_t root_path_cost;
+            if (p->info_is != INFO_IS_RECEIVED) {
+                continue;
+            }
+            /* [17.6] */
+            candidate_vector = p->port_priority;
+            candidate_vector.bridge_port_id = p->port_id;
+            old_root_path_cost = candidate_vector.root_path_cost;
+            root_path_cost = old_root_path_cost + p->port_path_cost;
+            candidate_vector.root_path_cost = root_path_cost;
 
-        if ((candidate_vector.designated_bridge_id & 0xffffffffffffULL) ==
+            if ((candidate_vector.designated_bridge_id & 0xffffffffffffULL) ==
                 (r->bridge_priority.designated_bridge_id & 0xffffffffffffULL))
-        {
-            break;
-        }
-        if (compare_rstp_priority_vector(&candidate_vector, &best_vector) ==
-            SUPERIOR) {
-            best_vector = candidate_vector;
-            r->root_times = p->port_times;
-            r->root_times.message_age++;
-            vsel = p->port_number;
+            {
+                break;
+            }
+            if (compare_rstp_priority_vector(&candidate_vector, &best_vector)
+                == SUPERIOR) {
+                best_vector = candidate_vector;
+                r->root_times = p->port_times;
+                r->root_times.message_age++;
+                vsel = p->port_number;
+            }
         }
     }
     r->root_priority = best_vector;
@@ -252,60 +257,62 @@ updt_roles_tree(struct rstp *r)
     VLOG_DBG("%s: new Root is "RSTP_ID_FMT"", r->name,
              RSTP_ID_ARGS(r->root_priority.root_bridge_id));
     /* Letters d) e) */
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        p->designated_priority_vector.root_bridge_id =
-            r->root_priority.root_bridge_id;
-        p->designated_priority_vector.root_path_cost =
-            r->root_priority.root_path_cost;
-        p->designated_priority_vector.designated_bridge_id =
-            r->bridge_identifier;
-        p->designated_priority_vector.designated_port_id =
-            p->port_id;
-        p->designated_times = r->root_times;
-        p->designated_times.hello_time = r->bridge_times.hello_time;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p, node, r->ports) {
+            p->designated_priority_vector.root_bridge_id =
+                r->root_priority.root_bridge_id;
+            p->designated_priority_vector.root_path_cost =
+                r->root_priority.root_path_cost;
+            p->designated_priority_vector.designated_bridge_id =
+                r->bridge_identifier;
+            p->designated_priority_vector.designated_port_id =
+                p->port_id;
+            p->designated_times = r->root_times;
+            p->designated_times.hello_time = r->bridge_times.hello_time;
+        }
     }
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        switch (p->info_is) {
-        case INFO_IS_DISABLED:
-            p->selected_role = ROLE_DISABLED;
-            break;
-        case INFO_IS_AGED:
-            p->updt_info = true;
-            p->selected_role = ROLE_DESIGNATED;
-            break;
-        case INFO_IS_MINE:
-            p->selected_role = ROLE_DESIGNATED;
-            if ((compare_rstp_priority_vector(&p->port_priority,
-                            &p->designated_priority_vector) != SAME) ||
-                    !rstp_times_equal(&p->designated_times, &r->root_times)) {
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p, node, r->ports) {
+            switch (p->info_is) {
+            case INFO_IS_DISABLED:
+                p->selected_role = ROLE_DISABLED;
+                break;
+            case INFO_IS_AGED:
                 p->updt_info = true;
-            }
-            break;
-        case INFO_IS_RECEIVED:
-            if (vsel == p->port_number) { /* Letter i) */
-                p->selected_role = ROLE_ROOT;
-                p->updt_info = false;
-            } else if (compare_rstp_priority_vector(
-                        &p->designated_priority_vector, &p->port_priority) ==
-                    INFERIOR) {
-                if (p->port_priority.designated_bridge_id !=
-                        r->bridge_identifier) {
-                    p->selected_role = ROLE_ALTERNATE;
-                    p->updt_info = false;
-                } else {
-                    p->selected_role = ROLE_BACKUP;
-                    p->updt_info = false;
-                }
-            } else {
                 p->selected_role = ROLE_DESIGNATED;
-                p->updt_info = true;
+                break;
+            case INFO_IS_MINE:
+                p->selected_role = ROLE_DESIGNATED;
+                if ((compare_rstp_priority_vector(&p->port_priority,
+                     &p->designated_priority_vector) != SAME) ||
+                     !rstp_times_equal(&p->designated_times, &r->root_times)) {
+                    p->updt_info = true;
+                }
+                break;
+            case INFO_IS_RECEIVED:
+                if (vsel == p->port_number) { /* Letter i) */
+                    p->selected_role = ROLE_ROOT;
+                    p->updt_info = false;
+                } else if (compare_rstp_priority_vector(
+                            &p->designated_priority_vector, &p->port_priority)
+                            == INFERIOR) {
+                    if (p->port_priority.designated_bridge_id !=
+                            r->bridge_identifier) {
+                        p->selected_role = ROLE_ALTERNATE;
+                        p->updt_info = false;
+                    } else {
+                        p->selected_role = ROLE_BACKUP;
+                        p->updt_info = false;
+                    }
+                } else {
+                    p->selected_role = ROLE_DESIGNATED;
+                    p->updt_info = true;
+                }
+                break;
+            default:
+                OVS_NOT_REACHED();
+                /* no break */
             }
-            break;
-        default:
-            OVS_NOT_REACHED();
-            /* no break */
         }
     }
     seq_change(connectivity_seq_get());
@@ -314,17 +321,17 @@ updt_roles_tree(struct rstp *r)
 void
 set_selected_tree(struct rstp *r)
 {
-    int port_no;
+    struct rstp_port *p;
 
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        if (p->reselect) {
-            return;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p, node, r->ports) {
+            if (p->reselect) {
+                return;
+            }
         }
-    }
-     for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        p->selected = true;
+        LIST_FOR_EACH (p, node, r->ports) {
+            p->selected = true;
+        }
     }
 }
 
@@ -332,7 +339,6 @@ int
 port_role_selection_sm(struct rstp *r)
 {
     enum port_role_selection_state_machine old_state;
-    int port_no;
     struct rstp_port *p;
 
     old_state = r->port_role_selection_sm_state;
@@ -359,12 +365,13 @@ port_role_selection_sm(struct rstp *r)
             PORT_ROLE_SELECTION_SM_ROLE_SELECTION;
         /* no break */
     case PORT_ROLE_SELECTION_SM_ROLE_SELECTION:
-        for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-            p = rstp_get_port(r, port_no);
-            if (p->reselect) {
-                r->port_role_selection_sm_state =
-                    PORT_ROLE_SELECTION_SM_ROLE_SELECTION_EXEC;
-                break;
+        if (r->ports_count > 0) {
+            LIST_FOR_EACH (p, node, r->ports) {
+                if (p->reselect) {
+                    r->port_role_selection_sm_state =
+                        PORT_ROLE_SELECTION_SM_ROLE_SELECTION_EXEC;
+                    break;
+                }
             }
         }
         break;
@@ -581,7 +588,6 @@ bridge_detection_sm(struct rstp_port *p)
 /* [17.26 - Port Transmit state machine] */
 static void
 rstp_send_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
-OVS_REQUIRES(mutex)
 {
     struct eth_header *eth;
     struct llc_header *llc;
@@ -603,7 +609,7 @@ OVS_REQUIRES(mutex)
     llc->llc_dsap = STP_LLC_DSAP;
     llc->llc_ssap = STP_LLC_SSAP;
     llc->llc_cntl = STP_LLC_CNTL;
-    p->rstp->send_bpdu(pkt, rstp_port_index(p), p->rstp->aux);
+    p->rstp->send_bpdu(pkt, rstp_port_number(p), p->rstp->aux);
 }
 
 void
@@ -770,6 +776,8 @@ tx_rstp(struct rstp_port *p)
         break;
     case ROLE_DISABLED:
         /* should not happen! */
+        VLOG_ERR("%s transmitting bpdu in disabled role on port "
+                 ""RSTP_PORT_ID_FMT"", p->rstp->name, p->port_id);
         OVS_NOT_REACHED();
         break;
     }
@@ -1180,12 +1188,13 @@ void
 set_re_root_tree(struct rstp_port *p)
 {
     struct rstp *r;
-    int port_no;
+    struct rstp_port *p1;
 
     r = p->rstp;
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-    struct rstp_port *p1 = rstp_get_port(r, port_no);
-        p1->re_root = true;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p1, node, r->ports) {
+            p1->re_root = true;
+        }
     }
 }
 
@@ -1193,12 +1202,13 @@ void
 set_sync_tree(struct rstp_port *p)
 {
     struct rstp *r;
-    int port_no;
+    struct rstp_port *p1;
 
     r = p->rstp;
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p1 = rstp_get_port(r, port_no);
-        p1->sync = true;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p1, node, r->ports) {
+            p1->sync = true;
+        }
     }
 }
 
@@ -1277,13 +1287,14 @@ int
 re_rooted(struct rstp_port *p)
 {
     struct rstp *r;
-    int port_no;
+    struct rstp_port *p1;
 
     r = p->rstp;
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p1 = rstp_get_port(r, port_no);
-        if ((p1 != p) && (p1->rr_while != 0)) {
-            return false;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p1, node, r->ports) {
+            if ((p1 != p) && (p1->rr_while != 0)) {
+                return false;
+            }
         }
     }
     return true;
@@ -1292,13 +1303,14 @@ re_rooted(struct rstp_port *p)
 int
 all_synced(struct rstp *r)
 {
-    int port_no;
+    struct rstp_port *p;
 
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p = rstp_get_port(r, port_no);
-        if (!(p->selected && p->role == p->selected_role &&
-                (p->role == ROLE_ROOT || p->synced == true))) {
-            return false;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p, node, r->ports) {
+            if (!(p->selected && p->role == p->selected_role &&
+                        (p->role == ROLE_ROOT || p->synced == true))) {
+                return false;
+            }
         }
     }
     return true;
@@ -1756,14 +1768,17 @@ void
 set_tc_prop_tree(struct rstp_port *p)
 {
     struct rstp *r;
-    int port_no;
+    struct rstp_port *p1;
 
     r = p->rstp;
-    for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-        struct rstp_port *p1 = rstp_get_port(r, port_no);
-        /* Set tc_prop on every port, except the one calling this function. */
-        if (p1->port_number != p->port_number) {
-            p1->tc_prop = true;
+    if (r->ports_count > 0) {
+        LIST_FOR_EACH (p1, node, r->ports) {
+            /* Set tc_prop on every port, except the one calling this
+             * function.
+             */
+            if (p1->port_number != p->port_number) {
+                p1->tc_prop = true;
+            }
         }
     }
 }

@@ -160,6 +160,8 @@ void rstp_set_bridge_times(struct rstp *, int new_forward_delay,
                            int new_hello_time, int new_max_age,
                            int new_message_age);
 
+struct rstp_port * rstp_add_port(struct rstp *);
+void rstp_delete_port(struct rstp_port *);
 /* Port setters */
 void rstp_port_set_priority(struct rstp_port *, int new_port_priority);
 void rstp_port_set_port_number(struct rstp_port *, uint16_t new_port_number);
@@ -168,8 +170,6 @@ void rstp_port_set_path_cost(struct rstp_port *, uint32_t new_port_path_cost);
 void rstp_port_set_admin_edge(struct rstp_port *, bool new_admin_edge);
 void rstp_port_set_auto_edge(struct rstp_port *, bool new_auto_edge);
 void rstp_port_set_state(struct rstp_port *, enum rstp_state new_state);
-void rstp_port_enable(struct rstp_port *);
-void rstp_port_disable(struct rstp_port *);
 void rstp_port_set_aux(struct rstp_port *, void *aux);
 void rstp_port_set_administrative_bridge_port(struct rstp_port *, uint8_t);
 void rstp_port_set_oper_point_to_point_mac(struct rstp_port *, uint8_t);
@@ -188,7 +188,7 @@ rstp_identifier rstp_get_designated_root(const struct rstp *);
 bool rstp_is_root_bridge(const struct rstp *);
 
 /* Port getters */
-int rstp_port_index(const struct rstp_port *);
+int rstp_port_number(const struct rstp_port *);
 struct rstp_port *rstp_get_port(struct rstp *, int port_no);
 uint16_t rstp_port_get_id(const struct rstp_port *);
 enum rstp_state rstp_port_get_state(const struct rstp_port *);
@@ -196,5 +196,4 @@ enum rstp_port_role rstp_port_get_role(const struct rstp_port *);
 void rstp_port_get_counts(const struct rstp_port *, int *tx_count,
                           int *rx_count, int *error_count, int *uptime);
 void * rstp_port_get_aux(struct rstp_port *);
-
 #endif /* rstp.h */

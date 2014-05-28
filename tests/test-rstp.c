@@ -74,7 +74,6 @@ send_bpdu(struct ofpbuf *pkt, int port_no, void *b_)
     struct bridge *b = b_;
     struct lan *lan;
 
-    assert(port_no < b->n_ports);
     lan = b->ports[port_no];
     if (lan) {
         const void *data = ofpbuf_l3(pkt);
@@ -162,12 +161,9 @@ static void
 new_port(struct bridge *b, struct lan *lan, uint32_t path_cost)
 {
     int port_no = b->n_ports++;
-    struct rstp_port *p = rstp_get_port(b->rstp, port_no);
-    assert(port_no < ARRAY_SIZE(b->ports));
-    b->ports[port_no] = NULL;
+    struct rstp_port *p = rstp_add_port(b->rstp);
     rstp_port_set_path_cost(p, path_cost);
     rstp_port_set_mac_operational(p, true);
-    rstp_port_enable(p);
     reconnect_port(b, port_no, lan);
 }
 
@@ -426,7 +422,7 @@ test_rstp_main(int argc, char *argv[])
     int i;
 
     vlog_set_pattern(VLF_CONSOLE, "%c|%p|%m");
-    vlog_set_levels(NULL, VLF_SYSLOG, VLL_OFF);
+    vlog_set_levels(NULL, VLF_ANY_FACILITY, VLL_DBG);//VLF_SYSLOG, VLL_OFF);
 
     if (argc != 2) {
         ovs_fatal(0, "usage: test-rstp INPUT.RSTP\n");
@@ -483,7 +479,7 @@ test_rstp_main(int argc, char *argv[])
                 for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
                     struct rstp_port *p = rstp_get_port(bridge->rstp, port_no);
                     if (!token || match("X")) {
-                        rstp_port_disable(p);
+                        rstp_delete_port(p);
                     } else if (match("_")) {
                         /* Nothing to do. */
                     } else {
@@ -506,7 +502,8 @@ test_rstp_main(int argc, char *argv[])
                         if (port_no < bridge->n_ports) {
                             rstp_port_set_path_cost(p, path_cost);
                             rstp_port_set_mac_operational(p, true);
-                            rstp_port_enable(p);
+                            //rstp_add_port(bridge->rstp);
+                            //rstp_port_enable(p);
                             reconnect_port(bridge, port_no, lan);
                         } else if (port_no == bridge->n_ports) {
                             new_port(bridge, lan, path_cost);
@@ -613,7 +610,7 @@ test_rstp_main(int argc, char *argv[])
                                 } else {
                                     warn("%s: (port %d is the root port)",
                                             rstp_get_name(rstp),
-                                            rstp_port_index(root_port));
+                                            rstp_port_number(root_port));
                                 }
                             } else if (cost_value != root_path_cost) {
                                 warn("%s: root path cost is %d, should be %d",

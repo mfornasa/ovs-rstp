@@ -56,7 +56,8 @@ void set_port_id__(struct rstp_port *);
 void update_port_enabled__(struct rstp_port *);
 void set_bridge_priority__(struct rstp *);
 void reinitialize_rstp__(struct rstp *);
-int is_port_number_taken__(struct rstp *, int);
+bool is_port_number_taken__(struct rstp *, int, struct rstp_port *);
+uint16_t rstp_first_free_number__(struct rstp *, struct rstp_port *);
 
 const char *
 rstp_state_name(enum rstp_state state)
@@ -110,28 +111,33 @@ rstp_ref(const struct rstp *rstp_)
 void
 rstp_unref(struct rstp *rstp)
 {
+    struct rstp_port *p;
+
     if (rstp && ovs_refcount_unref(&rstp->ref_cnt) == 1) {
         ovs_mutex_lock(&mutex);
+        if (rstp->ports_count > 0) {
+            LIST_FOR_EACH (p, node, rstp->ports) {
+                rstp_delete_port(p);
+            }
+        }
         list_remove(&rstp->node);
         ovs_mutex_unlock(&mutex);
         free(rstp->name);
         free(rstp);
+        seq_change(connectivity_seq_get());
     }
 }
 
-/* Returns the port index in the port array.  */
+/* Returns the port number. */
 int
-rstp_port_index(const struct rstp_port *p)
+rstp_port_number(const struct rstp_port *p)
 {
-    struct rstp *rstp;
-    int index;
+    int number;
 
     ovs_mutex_lock(&mutex);
-    rstp = p->rstp;
-    ovs_assert(p >= rstp->ports && p < &rstp->ports[ARRAY_SIZE(rstp->ports)]);
-    index = p - p->rstp->ports;
+    number = p->port_number;
     ovs_mutex_unlock(&mutex);
-    return index;
+    return number;
 }
 
 static void rstp_unixctl_tcn(struct unixctl_conn *, int argc,
@@ -142,14 +148,18 @@ static int rstp_initialize_port(struct rstp_port *p);
 void
 rstp_tick_timers(struct rstp *rstp)
 {
+    ovs_mutex_lock(&mutex);
     decrease_rstp_port_timers(rstp);
+    ovs_mutex_unlock(&mutex);
 }
 
 /* Processes an incoming BPDU. */
 void
 rstp_received_bpdu(struct rstp_port *p, const void *bpdu, size_t bpdu_size)
 {
+    ovs_mutex_lock(&mutex);
     process_received_bpdu(p, bpdu, bpdu_size);
+    ovs_mutex_unlock(&mutex);
 }
 
 void
@@ -159,9 +169,7 @@ rstp_init(void)
                                      NULL);
 }
 
-/* Creates and returns a new RSTP instance that initially has no ports
- * enabled.
- */
+/* Creates and returns a new RSTP instance that initially has no ports. */
 struct rstp *
 rstp_create(const char *name, rstp_identifier bridge_address,
         void (*send_bpdu)(struct ofpbuf *bpdu, int port_no, void *aux),
@@ -169,7 +177,7 @@ rstp_create(const char *name, rstp_identifier bridge_address,
 {
     static struct ovsthread_once once = OVSTHREAD_ONCE_INITIALIZER;
     struct rstp *rstp;
-    struct rstp_port *p;
+    static struct list ports = LIST_INITIALIZER(&ports);
 
     VLOG_DBG("Creating RSTP instance");
     if (ovsthread_once_start(&once)) {
@@ -199,13 +207,8 @@ rstp_create(const char *name, rstp_identifier bridge_address,
     rstp->aux = aux;
     rstp->changes = false;
     rstp->begin = true;
-    rstp->first_changed_port = &rstp->ports[ARRAY_SIZE(rstp->ports)];
-    /* Initialize the ports array. */
-    for (p = rstp->ports; p < &rstp->ports[ARRAY_SIZE(rstp->ports)]; p++) {
-        p->rstp = rstp;
-        rstp_initialize_port(p);
-        rstp_port_set_state(p, RSTP_DISABLED);
-    }
+    /* Initialize the ports list. */
+    rstp->ports OVS_GUARDED_BY(mutex) = &ports;
     ovs_refcount_init(&rstp->ref_cnt);
     list_push_back(all_rstps, &rstp->node);
     ovs_mutex_unlock(&mutex);
@@ -242,9 +245,11 @@ rstp_set_bridge_address(struct rstp *rstp, rstp_identifier bridge_address)
     /* [17.13] When the bridge address changes, recalculates all priority
      * vectors.
      */
-    for (p = rstp->ports; p < &rstp->ports[ARRAY_SIZE(rstp->ports)]; p++) {
-        p->selected = 0;
-        p->reselect = 1;
+    if (rstp->ports_count > 0) {
+        LIST_FOR_EACH (p, node, rstp->ports) {
+            p->selected = 0;
+            p->reselect = 1;
+        }
     }
     rstp->changes = true;
     updt_roles_tree(rstp);
@@ -290,9 +295,11 @@ rstp_set_bridge_priority(struct rstp *rstp, int new_priority)
         set_bridge_priority__(rstp);
 
         /* [17.13] */
-        for (p = rstp->ports; p < &rstp->ports[ARRAY_SIZE(rstp->ports)]; p++) {
-            p->selected = 0;
-            p->reselect = 1;
+        if (rstp->ports_count > 0){
+            LIST_FOR_EACH (p, node, rstp->ports) {
+                p->selected = 0;
+                p->reselect = 1;
+            }
         }
         rstp->changes = true;
         updt_roles_tree(rstp);
@@ -349,11 +356,12 @@ reinitialize_rstp__(struct rstp *rstp)
     rstp->node = temp.node;
     rstp->changes = false;
     rstp->begin = true;
-    rstp->first_changed_port = &rstp->ports[ARRAY_SIZE(rstp->ports)];
-    for (p = rstp->ports; p < &rstp->ports[ARRAY_SIZE(rstp->ports)]; p++) {
-        p->rstp = rstp;
-        rstp_initialize_port(p);
-        rstp_port_set_state(p, RSTP_DISABLED);
+    if (rstp->ports_count > 0){
+        LIST_FOR_EACH (p, node, rstp->ports) {
+            p->rstp = rstp;
+            rstp_initialize_port(p);
+            rstp_port_set_state(p, RSTP_DISABLED);
+        }
     }
     rstp->ref_cnt = temp.ref_cnt;
 }
@@ -440,7 +448,7 @@ void
 rstp_set_bridge_transmit_hold_count(struct rstp *rstp,
                                     int new_transmit_hold_count)
 {
-    int port_no;
+    struct rstp_port *p;
 
     if (new_transmit_hold_count >= RSTP_MIN_TRANSMIT_HOLD_COUNT &&
             new_transmit_hold_count <= RSTP_MAX_TRANSMIT_HOLD_COUNT) {
@@ -449,9 +457,10 @@ rstp_set_bridge_transmit_hold_count(struct rstp *rstp,
         /* Resetting txCount on all ports [17.13]. */
         ovs_mutex_lock(&mutex);
         rstp->transmit_hold_count = new_transmit_hold_count;
-        for (port_no = 0; port_no < RSTP_MAX_PORTS; port_no++) {
-            struct rstp_port *p = rstp_get_port(rstp, port_no);
-            p->tx_count=0;
+        if (rstp->ports_count > 0){
+            LIST_FOR_EACH (p, node, rstp->ports) {
+                p->tx_count=0;
+            }
         }
         ovs_mutex_unlock(&mutex);
     }
@@ -500,8 +509,6 @@ set_port_id__(struct rstp_port *p)
     p->port_id = p->port_number | (p->priority << 8);
     VLOG_DBG("%s: new RSTP port id "RSTP_PORT_ID_FMT"", rstp->name,
              p->port_id);
-    VLOG_DBG("PPP port "RSTP_PORT_ID_FMT" in position %d", p->port_id,
-             rstp_port_index(p));
 }
 
 /* Sets the port priority. */
@@ -526,18 +533,37 @@ rstp_port_set_priority(struct rstp_port *rstp_port, int new_port_priority)
 }
 
 /* Checks if a port number is already taken by an active port. */
-int
-is_port_number_taken__(struct rstp *rstp, int n)
+bool
+is_port_number_taken__(struct rstp *rstp, int n, struct rstp_port *rstp_port)
 {
     struct rstp_port *p;
-
-    for (p = rstp->ports; p < &rstp->ports[ARRAY_SIZE(rstp->ports)]; p++) {
-        if (p->port_number == n && p->rstp_state != RSTP_DISABLED) {
-            VLOG_DBG("%s: port number %d already taken by port in state = %s",
-                     rstp->name, n, rstp_state_name(p->rstp_state));
-            return -1;
+    if (rstp->ports_count > 0){
+        LIST_FOR_EACH (p, node, rstp->ports) {
+            if (p->port_number == n && rstp_port != rstp_get_port(rstp, n)) {
+                VLOG_DBG("%s: port number %d not available", rstp->name, n);
+                return true;
+            }
         }
     }
+    VLOG_DBG("%s: port number %d is available", rstp->name, n);
+    return false;
+}
+
+uint16_t
+rstp_first_free_number__(struct rstp *rstp, struct rstp_port *rstp_port) {
+    int free_number;
+
+    free_number = 1;
+    ovs_mutex_lock(&mutex);
+    while (free_number <= RSTP_MAX_PORTS) {
+        if (!is_port_number_taken__(rstp, free_number, rstp_port)) {
+            ovs_mutex_unlock(&mutex);
+            return free_number;
+        }
+        free_number++;
+    }
+    ovs_mutex_unlock(&mutex);
+    VLOG_DBG("%s, No free port number available.", rstp->name);
     return 0;
 }
 
@@ -547,23 +573,33 @@ rstp_port_set_port_number(struct rstp_port *rstp_port,
                           uint16_t new_port_number)
 {
     struct rstp *rstp;
-
     rstp = rstp_port->rstp;
-    if (new_port_number >= 1 && new_port_number <= RSTP_MAX_PORTS) {
-        ovs_mutex_lock(&mutex);
-        if (is_port_number_taken__(rstp_port->rstp,  new_port_number) != -1) {
-            VLOG_DBG("%s: set new RSTP port number %d -> %d", rstp->name,
+    ovs_mutex_lock(&mutex);
+    /* If new_port_number is inside bounds and available, use it.
+     * If new_port_number is 0 or it is already taken, use the first free
+     * available port number.
+     */
+    if ((new_port_number >= 1 && new_port_number <= RSTP_MAX_PORTS) &&
+        (!is_port_number_taken__(rstp_port->rstp, new_port_number, rstp_port))) {
+        VLOG_DBG("%s: set new RSTP port number %d -> %d", rstp->name,
                      rstp_port->port_number, new_port_number);
-            rstp_port->port_number =  new_port_number;
-            set_port_id__(rstp_port);
-            /* [17.13] is not clear. I suppose that a port number change
-             * should trigger reselection like a port priority change.
-             */
-            rstp_port->selected = 0;
-            rstp_port->reselect = 1;
-        }
-        ovs_mutex_unlock(&mutex);
+        rstp_port->port_number =  new_port_number;
     }
+    else if (new_port_number == 0 ||
+             is_port_number_taken__(rstp_port->rstp, new_port_number,
+             rstp_port)) {
+        rstp_port->port_number = rstp_first_free_number__(rstp, rstp_port);
+    }
+
+    set_port_id__(rstp_port);
+    /* [17.13] is not clear. I suppose that a port number change
+     * should trigger reselection like a port priority change.
+     */
+    rstp_port->selected = 0;
+    rstp_port->reselect = 1;
+    ovs_mutex_unlock(&mutex);
+    VLOG_DBG("%s: set new RSTP port number %d", rstp->name,
+             rstp_port->port_number);
 }
 
 /* Converts the link speed to a port path cost [Table 17-3]. */
@@ -624,19 +660,20 @@ bool
 rstp_check_and_reset_fdb_flush(struct rstp *rstp)
 {
     bool needs_flush;
-    struct rstp_port *p, *end;
+    struct rstp_port *p;
 
     needs_flush = false;
 
     ovs_mutex_lock(&mutex);
-    end = &rstp->ports[ARRAY_SIZE(rstp->ports)];
-    for (p = rstp->first_changed_port; p < end; p++) {
-        if(p->fdb_flush == true) {
-            needs_flush = true;
-            /* fdb_flush should be reset by the filtering database
-             * once the entries are removed if rstp_version is TRUE, and
-             * immediately if stp_version is TRUE.*/
-            p->fdb_flush = false;
+    if (rstp->ports_count > 0){
+        LIST_FOR_EACH (p, node, rstp->ports) {
+            if (p->state_changed && p->fdb_flush == true) {
+                needs_flush = true;
+                /* fdb_flush should be reset by the filtering database
+                 * once the entries are removed if rstp_version is TRUE, and
+                 * immediately if stp_version is TRUE.*/
+                p->fdb_flush = false;
+            }
         }
     }
     ovs_mutex_unlock(&mutex);
@@ -649,42 +686,42 @@ rstp_check_and_reset_fdb_flush(struct rstp *rstp)
 bool
 rstp_get_changed_port(struct rstp *rstp, struct rstp_port **portp)
 {
-    struct rstp_port *end, *p;
+    struct rstp_port *p;
     bool changed;
 
     changed = false;
 
     ovs_mutex_lock(&mutex);
-    end = &rstp->ports[ARRAY_SIZE(rstp->ports)];
-    for (p = rstp->first_changed_port; p < end; p++) {
-        if (p->state_changed) {
-            p->state_changed = false;
-            rstp->first_changed_port = p + 1;
-            *portp = p;
-            changed = true;
-            goto out;
+    if (rstp->ports_count > 0){
+        LIST_FOR_EACH (p, node, rstp->ports) {
+            if (p->state_changed) {
+                p->state_changed = false;
+                *portp = p;
+                changed = true;
+            }
         }
     }
-    rstp->first_changed_port = end;
-    *portp = NULL;
-out:
     ovs_mutex_unlock(&mutex);
     return changed;
 }
 
-/* Returns the port in 'rstp' with index 'port_no', which must be between 0
- * and RSTP_MAX_PORTS.
- */
+/* Returns the port in 'rstp' with number 'port_number'. */
 struct rstp_port *
-rstp_get_port(struct rstp *rstp, int port_no)
+rstp_get_port(struct rstp *rstp, int port_number)
 {
     struct rstp_port *port;
 
     ovs_mutex_lock(&mutex);
-    ovs_assert(port_no >= 0 && port_no < ARRAY_SIZE(rstp->ports));
-    port = &rstp->ports[port_no];
+    if (rstp->ports_count > 0){
+        LIST_FOR_EACH (port, node, rstp->ports) {
+            if (port->port_number == port_number) {
+                ovs_mutex_unlock(&mutex);
+                return port;
+            }
+        }
+    }
     ovs_mutex_unlock(&mutex);
-    return port;
+    return NULL;
 }
 
 /* Updates the port_enabled parameter. */
@@ -763,7 +800,7 @@ OVS_REQUIRES(mutex)
     rstp_port_set_oper_point_to_point_mac(p, 1);
     rstp_port_set_path_cost(p, RSTP_DEFAULT_PORT_PATH_COST);
     rstp_port_set_priority(p, RSTP_DEFAULT_PORT_PRIORITY);
-    rstp_port_set_port_number(p, rstp_port_index(p) + 1);
+    rstp_port_set_port_number(p, 0);
     rstp_port_set_path_cost(p, RSTP_DEFAULT_PORT_PATH_COST);
     rstp_port_set_auto_edge(p, true);
 
@@ -775,7 +812,7 @@ OVS_REQUIRES(mutex)
     p->port_role_transition_sm_state = PORT_ROLE_TRANSITION_SM_INIT;
     p->port_state_transition_sm_state = PORT_STATE_TRANSITION_SM_INIT;
     p->topology_change_sm_state = TOPOLOGY_CHANGE_SM_INIT;
-
+    p->aux = NULL;
     p->uptime = 0;
 
     VLOG_DBG("%s: init RSTP port "RSTP_PORT_ID_FMT"", rstp->name,p->port_id);
@@ -796,54 +833,40 @@ OVS_REQUIRES(mutex)
 
     if (state != p->rstp_state && !p->state_changed) {
         p->state_changed = true;
-        if (p < p->rstp->first_changed_port) {
-            p->rstp->first_changed_port = p;
-        }
         seq_change(connectivity_seq_get());
     }
     p->rstp_state = state;
 }
 
-
-/* Enables RSTP on port 'p'.
- * The port will initially be in DISCARDING state.
- */
-void
-rstp_port_enable(struct rstp_port *p)
-{
-    struct rstp *rstp;
+/* Adds a RSTP port.. */
+struct rstp_port *
+rstp_add_port(struct rstp *rstp) {
+    struct rstp_port *p = xzalloc(sizeof *p);
 
     ovs_mutex_lock(&mutex);
-    rstp = p->rstp;
-    if (p->rstp_state == RSTP_DISABLED) {
-        rstp_initialize_port(p);
-        rstp_port_set_state(p, RSTP_DISCARDING);
-        p->rstp->ports_count++;
-        VLOG_DBG("%s: enabling RSTP port %u", rstp->name, p->port_number);
-        rstp->changes = true;
-        move_rstp(rstp);
-    }
+    p->rstp = rstp;
+    rstp_initialize_port(p);
+    rstp_port_set_state(p, RSTP_DISCARDING);
+    list_push_back(rstp->ports, &p->node);
+    rstp->ports_count++;
+    rstp->changes = true;
+    move_rstp(rstp);
     ovs_mutex_unlock(&mutex);
+    VLOG_DBG("%s: added port "RSTP_PORT_ID_FMT"", rstp->name, p->port_id);
+    return p;
 }
 
-/* Disable RSTP on port 'p'. */
+/* Deletes a RSTP port. */
 void
-rstp_port_disable(struct rstp_port *p)
-{
+rstp_delete_port(struct rstp_port *p) {
     struct rstp *rstp;
 
     ovs_mutex_lock(&mutex);
     rstp = p->rstp;
-    if (p->rstp_state != RSTP_DISABLED) {
-        VLOG_DBG("%s: disabling RSTP port %u", rstp->name, p->port_number);
-        memset(p, 0, sizeof(struct rstp_port));
-        p->rstp = rstp;
-        rstp_initialize_port(p);
-        rstp_port_set_state(p, RSTP_DISABLED);
-        p->rstp->ports_count--;
-        rstp->changes = true;
-        move_rstp(rstp);
-    }
+    list_remove(&p->node);
+    rstp->ports_count--;
+    VLOG_DBG("%s: removed port "RSTP_PORT_ID_FMT"", rstp->name, p->port_id);
+    free(p);
     ovs_mutex_unlock(&mutex);
 }
 
@@ -979,10 +1002,12 @@ rstp_get_root_port(struct rstp *rstp)
     struct rstp_port *p;
 
     ovs_mutex_lock(&mutex);
-    for (p = rstp->ports; p < &rstp->ports[ARRAY_SIZE(rstp->ports)]; p++) {
-        if(p->port_id == rstp->root_port_id) {
-            ovs_mutex_unlock(&mutex);
-            return p;
+    if (rstp->ports_count > 0){
+        LIST_FOR_EACH (p, node, rstp->ports) {
+            if (p->port_id == rstp->root_port_id) {
+                ovs_mutex_unlock(&mutex);
+                return p;
+            }
         }
     }
     ovs_mutex_unlock(&mutex);
@@ -1097,7 +1122,7 @@ rstp_find(const char *name) OVS_REQUIRES(mutex)
 {
     struct rstp *rstp;
 
-    LIST_FOR_EACH(rstp, node, all_rstps) {
+    LIST_FOR_EACH (rstp, node, all_rstps) {
         if (!strcmp(rstp->name, name)) {
             return rstp;
         }

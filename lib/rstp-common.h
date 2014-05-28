@@ -271,6 +271,7 @@ enum rstp_rcvd_info {
 
 struct rstp_port {
     struct rstp *rstp;
+    struct list node; /* Node in rstp->ports list. */
     void *aux;
     struct rstp_bpdu received_bpdu_buffer;
     /*************************************************************************
@@ -872,13 +873,12 @@ struct rstp {
     bool stp_version;
 
     /* Ports */
-    struct rstp_port ports[RSTP_MAX_PORTS];
+    struct list *ports;
     uint16_t ports_count;
 
     struct ovs_refcount ref_cnt;
 
     /* Interface to client. */
-    struct rstp_port *first_changed_port;
     void (*send_bpdu)(struct ofpbuf *bpdu, int port_no, void *aux);
     void *aux;
 };

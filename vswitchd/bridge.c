@@ -1290,8 +1290,7 @@ port_configure_stp(const struct ofproto *ofproto, struct port *port,
 
 static void
 port_configure_rstp(const struct ofproto *ofproto, struct port *port,
-        struct ofproto_port_rstp_settings *port_s,
-        int *port_num_counter, unsigned long *port_num_bitmap)
+        struct ofproto_port_rstp_settings *port_s, int *port_num_counter)
 {
     const char *config_str;
     struct iface *iface;
@@ -1336,36 +1335,18 @@ port_configure_rstp(const struct ofproto *ofproto, struct port *port,
             port_s->enable = false;
             return;
         }
-        if (bitmap_is_set(port_num_bitmap, port_num)) {
-            VLOG_ERR("port %s: duplicate rstp-port-num %lu, disabling",
-                    port->name, port_num);
-            port_s->enable = false;
-            return;
-        }
-        bitmap_set1(port_num_bitmap, port_num);
         port_s->port_num = port_num;
     }
     else {
-        int temp_num;
-
         if (*port_num_counter >= RSTP_MAX_PORTS) {
             VLOG_ERR("port %s: too many RSTP ports, disabling", port->name);
             port_s->enable = false;
             return;
         }
-        /* If rstp-port-num is not specified, look for the first free one. */
-        for (temp_num = 1; temp_num <= RSTP_MAX_PORTS; temp_num++) {
-            if (!bitmap_is_set(port_num_bitmap, temp_num)) {
-                bitmap_set1(port_num_bitmap, temp_num);
-                port_s->port_num = temp_num;
-                break;
-            }
-        }
-        if (temp_num > RSTP_MAX_PORTS) {
-            VLOG_ERR("port %s: no rstp-port-num available", port->name);
-            port_s->enable = false;
-            return;
-        }
+        /* If rstp-port-num is not specified, use 0. rstp_port_set_port_number
+         * will look for the first free one.
+         */
+        port_s->port_num = 0;
     }
 
     config_str = smap_get(&port->cfg->other_config, "rstp-path-cost");
@@ -1514,7 +1495,6 @@ bridge_configure_rstp(struct bridge *br)
         const char *config_str;
         struct port *port;
         int port_num_counter;
-        unsigned long *port_num_bitmap;
 
         config_str = smap_get(&br->cfg->other_config, "rstp-address");
         if (config_str) {
@@ -1584,13 +1564,12 @@ bridge_configure_rstp(struct bridge *br)
         }
 
         port_num_counter = 0;
-        port_num_bitmap = bitmap_allocate(RSTP_MAX_PORTS);
         HMAP_FOR_EACH (port, hmap_node, &br->ports) {
             struct ofproto_port_rstp_settings port_s;
             struct iface *iface;
 
             port_configure_rstp(br->ofproto, port, &port_s,
-                    &port_num_counter, port_num_bitmap);
+                    &port_num_counter);
 
             /* As bonds are not supported, just apply configuration to
              * all interfaces. */

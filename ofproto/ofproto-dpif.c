@@ -640,7 +640,7 @@ type_run(const char *type)
                     ? stp_port_no(ofport->stp_port)
                     : -1;
                 int rstp_port = ofport->rstp_port
-                    ? rstp_port_index(ofport->rstp_port)
+                    ? rstp_port_number(ofport->rstp_port)
                     : -1;
                 xlate_ofport_set(ofproto, ofport->bundle, ofport,
                                  ofport->up.ofp_port, ofport->odp_port,
@@ -1700,7 +1700,7 @@ port_destruct(struct ofport *port_)
         stp_port_disable(port->stp_port);
     }
     if (port->rstp_port) {
-        rstp_port_disable(port->rstp_port);
+        rstp_delete_port(port->rstp_port);
     }
     if (ofproto->sflow) {
         dpif_sflow_del_port(ofproto->sflow, port->odp_port);
@@ -2320,24 +2320,48 @@ set_rstp_port(struct ofport *ofport_,
     struct ofport_dpif *ofport = ofport_dpif_cast(ofport_);
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(ofport->up.ofproto);
     struct rstp_port *rp = ofport->rstp_port;
-    int port_index;
     if (!s || !s->enable) {
         if (rp) {
             ofport->rstp_port = NULL;
-            rstp_port_disable(rp);
+            rstp_delete_port(rp);
             update_rstp_port_state(ofport);
         }
         return 0;
-    } else if (rp && rstp_port_index(rp) != s->port_num
+    } else if (rp && rstp_port_number(rp) != s->port_num
                   && ofport == rstp_port_get_aux(rp)) {
         /* The port-id changed, so disable the old one if it's not
          * already in use by another port. */
-        rstp_port_disable(rp);
+
+        int stp_port = ofport->stp_port
+            ? stp_port_no(ofport->stp_port)
+            : -1;
+        xlate_ofport_set(ofproto, ofport->bundle, ofport,
+                ofport->up.ofp_port, ofport->odp_port,
+                ofport->up.netdev, ofport->cfm,
+                ofport->bfd, ofport->peer, stp_port,
+                s->port_num,
+                ofport->qdscp, ofport->n_qdscp,
+                ofport->up.pp.config, ofport->up.pp.state,
+                ofport->is_tunnel, ofport->may_enable);
+
+        rstp_port_set_aux(rp, ofport);
+        rstp_port_set_priority(rp, s->priority);
+        rstp_port_set_port_number(rp, s->port_num);
+        rstp_port_set_path_cost(rp, s->path_cost);
+        rstp_port_set_admin_edge(rp, s->admin_edge_port);
+        rstp_port_set_auto_edge(rp, s->auto_edge);
+        rstp_port_set_mcheck(rp, s->mcheck);
+
+        update_rstp_port_state(ofport);
+
+        return 0;
+
     }
-    port_index = s->port_num - 1;
-    rp = ofport->rstp_port = rstp_get_port(ofproto->rstp, port_index);
+    rp = ofport->rstp_port = rstp_get_port(ofproto->rstp, s->port_num);
     /* Enable RSTP on port */
-    rstp_port_enable(rp);
+    if (!rp) {
+        rp = ofport->rstp_port = rstp_add_port(ofproto->rstp);
+    }
     /* Setters */
     rstp_port_set_aux(rp, ofport);
     rstp_port_set_priority(rp, s->priority);
